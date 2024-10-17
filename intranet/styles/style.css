@@ -1,0 +1,1258 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+::after,
+::before {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    text-decoration: none;
+}
+
+li {
+    list-style: none;
+}
+
+h1 {
+    font-weight: 600;
+    font-size: 1.5rem;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+.wrapper {
+    display: flex;
+}
+
+.main {
+    min-height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    transition: all 0.35s ease-in-out;
+    background-color: #fafbfe;
+    margin: 0;
+    padding: 0;
+}
+
+/* Ajustes a la barra lateral */
+#sidebar {
+    position: fixed; /* Fijar la barra en la pantalla */
+    top: 0; /* Alinearla en la parte superior */
+    left: 0; /* Alinearla en la parte izquierda */
+    width: 70px;
+    min-width: 70px;
+    height: 100vh; /* Altura completa de la ventana */
+    z-index: 1000;
+    transition: all .25s ease-in-out;
+    background-color: #343F47;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Estilo para la barra expandida */
+#sidebar.expand {
+    width: 260px;
+    min-width: 260px;
+}
+
+/* Ajuste del contenido principal */
+/* Ajuste del contenido principal */
+.main-content {
+    margin-left: 70px; /* Asegura que el contenido no quede debajo de la barra */
+    transition: margin-left .25s ease-in-out; /* Suave transición cuando la barra se expande */
+}
+
+/* Ajuste del contenido principal cuando la barra está expandida */
+.main-content.expanded {
+    margin-left: 80px; /* Ajuste del margen cuando la barra está expandida */
+}
+
+.main.expanded{
+    margin-left: 180px; /* Ajuste del margen cuando la barra está expandida */
+    transition: margin-left .25s ease-in-out; /* Suave transición cuando la barra se expande */
+}
+
+.header-home.expanded{
+    margin-left: 80px; /* Asegura que el contenido no quede debajo de la barra */
+    transition: margin-left .25s ease-in-out; /* Suave transición cuando la barra se expande */
+}
+
+.header-home{
+    transition: margin-left .25s ease-in-out; /* Suave transición cuando la barra se expande */
+}
+/* Ajuste del contenido principal cuando la barra está expandida */
+#sidebar.expand + .main-content {
+    margin-left: 200px; /* Ajuste del margen cuando la barra está expandida */
+}
+
+/* Otros estilos permanecen igual */
+.toggle-btn {
+    background-color: transparent;
+    cursor: pointer;
+    border: 0;
+    padding: 1rem 1.5rem;
+}
+
+.toggle-btn i {
+    font-size: 1.5rem;
+    color: #FFF;
+}
+
+.sidebar-logo {
+    margin: auto 0;
+}
+
+.sidebar-logo a {
+    color: #FFF;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+#sidebar:not(.expand) .sidebar-logo,
+#sidebar:not(.expand) a.sidebar-link span {
+    display: none;
+}
+
+.sidebar-nav {
+    padding: 2rem 0;
+    padding-top: 0;
+    flex: 1 1 auto;
+}
+
+a.sidebar-link {
+    padding: .625rem 1.625rem;
+    color: #FFF;
+    display: block;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-link i {
+    font-size: 1.1rem;
+    margin-right: .75rem;
+}
+
+a.sidebar-link:hover {
+    background-color: rgba(255, 255, 255, .075);
+    border-left: 3px solid #3b7ddd;
+}
+
+.sidebar-item {
+    position: relative;
+}
+
+#sidebar:not(.expand) .sidebar-item .sidebar-dropdown {
+    position: absolute;
+    top: 0;
+    left: 70px;
+    background-color: #0e2238;
+    padding: 0;
+    min-width: 15rem;
+    display: none;
+}
+
+#sidebar:not(.expand) .sidebar-item:hover .has-dropdown+.sidebar-dropdown {
+    display: block;
+    max-height: 15em;
+    width: 100%;
+    opacity: 1;
+}
+
+#sidebar.expand .sidebar-link[data-bs-toggle="collapse"]::after {
+    border: solid;
+    border-width: 0 .075rem .075rem 0;
+    content: "";
+    display: inline-block;
+    padding: 2px;
+    position: absolute;
+    right: 1.5rem;
+    top: 1.4rem;
+    transform: rotate(-135deg);
+    transition: all .2s ease-out;
+}
+
+#sidebar.expand .sidebar-link[data-bs-toggle="collapse"].collapsed::after {
+    transform: rotate(45deg);
+    transition: all .2s ease-out;
+}
+
+/* Estilo para la barra superior o navbar */
+.d-flex {
+    background-color: #1CA5EA;
+
+}
+
+
+.header {
+    padding: 0;
+    margin-top: -13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 0.1px solid #ccc;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    height: 55px;
+}
+
+.header .logo {
+    color: #fff; /* Texto blanco */
+    font-weight: bold;
+    font-size: 22px;
+    padding: 20px; /* Ajusta el padding para dar más espacio al logo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%; /* Asegura que el fondo cubra toda la altura */
+    margin: 0; /* Elimina márgenes */
+    background-color: #1CA5EA; /* Fondo celeste */
+}
+
+.header .user-info {
+    display: flex;
+    align-items: center;
+    margin-right: 30px;
+    justify-items: end;
+    
+}
+
+.header .user-nom {
+    display: flex;
+    align-items: center;
+    margin-right: 30px;
+    justify-items: end;
+    font-size: 14px;
+    margin-left: -200px;
+    
+}
+
+.header .user-nom i {
+    margin-right: 20px;
+    
+}
+
+.header .user-info img {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+}
+
+.header .user-info span {
+    font-size: 14px;
+    color: #333;
+}
+
+.header .user-info .Salir{
+    margin-left: 30px;
+    
+}
+
+.header .user-info .Salir a {
+    text-decoration: none;
+}
+
+.header .ficha {
+    margin-left: 30px;
+}
+
+.header .navbar {
+    margin-left: -250px;
+}
+
+/* Estilos para el contenido principal */
+.main-content {
+    flex: 1;
+   
+}
+
+.main-content .solicitud-header h1 {
+    font-size: 60px;
+    color: white;
+    margin-bottom: 20px;
+    padding: 30px;
+    border-radius: 10PX;
+}
+
+.main-content1 {
+    flex: 1;
+    padding: 20px;
+    background-color: #f4f4f4; /* Fondo gris para toda la sección */
+    border-radius: 8px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+    
+}
+
+.main-content .breadcrumb{
+    font-size: 0.8em;
+}
+
+.tab-menu {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ccc;
+}
+
+.tab-menu div {
+    padding: 10px 20px;
+    cursor: pointer;
+    color: #333;
+}
+
+.tab-menu div.active {
+    border-bottom: 2px solid #0056b3;
+    font-weight: bold;
+    color: #0056b3;
+}
+
+.tab-content {
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.tab-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.tab-content table, .tab-content table th, .tab-content table td {
+    border: 1px solid #ccc;
+}
+
+.tab-content table th, .tab-content table td {
+    padding: 10px;
+    text-align: left;
+}
+
+.sidebar .user-photo {
+    display: flex;
+    align-items: center;
+    margin: 20px 35px;
+}
+
+.sidebar .user-photo img {
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    
+}
+
+/* Estilos para ocultar foto y nombre cuando el sidebar está cerrado */
+#sidebar .profile-container {
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: opacity 0.25s ease-in-out, max-height 0.25s ease-in-out;
+    width: 50%;
+    justify-content: center;
+    align-items: center;
+}
+
+#sidebar.expand .profile-container {
+    opacity: 1;
+    max-height: 150px; /* Ajusta este valor según el tamaño de la imagen y el nombre */
+}
+
+
+
+/* Contenedor de la imagen de perfil */
+.profile-container {
+    text-align: center;
+    padding: 10px; /* Ajusta el padding para centrar verticalmente */
+    margin-left: 50px;
+    justify-content: center;
+    justify-items: center;
+
+    
+}
+
+/* Imagen de perfil */
+.profile-container img {
+    width: 90px; /* Ajusta el tamaño de la imagen según sea necesario */
+    height: 90px; /* Asegúrate de que la altura coincida con el ancho para una imagen circular */
+    object-fit: cover; /* Evita que la imagen se corte */
+    border-radius: 50%; /* Asegura que la imagen sea circular */
+    display: block;
+    margin: 0 auto; /* Centra horizontalmente la imagen */
+}
+
+.profile-container-big img{
+    width: 0px; /* Ajusta el tamaño de la imagen según sea necesario */
+    height: 0px; /* Asegúrate de que la altura coincida con el ancho para una imagen circular */
+    object-fit: cover; /* Evita que la imagen se corte */
+    border-radius: 20%; /* Asegura que la imagen sea circular */
+    display: block;
+    margin: 0 auto; /* Centra horizontalmente la imagen */
+}
+
+
+ /* Contenedor personalizado */
+ .custom-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f1f1f1; /* Fondo claro */
+    padding: 20px;
+    border-radius: 15px; /* Bordes redondeados */
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1); /* Sombra suave */
+    width: 320px; /* Ancho del contenedor */
+    margin: 50px auto; /* Centra el contenedor */
+}
+
+.custom-container .profile-picture {
+    width: 140px; /* Ancho de la imagen */
+    height: 140px; /* Alto de la imagen */
+    border-radius: 50%; /* Hacer la imagen redonda */
+    object-fit: cover; /* Asegura que la imagen no se distorsione */
+    border: 4px solid #4a90e2; /* Borde azul */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Sombra suave */
+    margin-bottom: 20px;
+}
+
+/* Imagen dentro del contenedor */
+.custom-container .profile-picture {
+    width: 200px; /* Ancho de la imagen */
+    height: 200px; /* Alto de la imagen */
+    border-radius: 50%; /* Hacer la imagen redonda */
+    object-fit: cover; /* Asegura que la imagen no se distorsione */
+    border: 4px solid #4a90e2; /* Borde azul */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Sombra suave */
+    margin-bottom: 20px;
+}
+
+/* Información del perfil */
+.custom-container .profile-info {
+    text-align: center;
+    color: #333;
+}
+
+.custom-container .profile-info h3 {
+    margin-bottom: 10px;
+    font-size: 1.6em;
+    color: #2c3e50;
+}
+
+.custom-container .profile-info p {
+    margin: 5px 0;
+    font-size: 1.1em;
+}
+
+/* Login */
+.body-login {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background: url('Images/fondo_login.jpg') no-repeat center center fixed !important;
+    background-size: cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-container {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 300px;
+}
+
+.login-container img {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 20px;
+}
+
+.login-container input[type="text"],
+.login-container input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+.password-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.password-container input[type="password"] {
+    padding-right: 40px;
+    
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    color: #3498db;
+    font-size: 1.2em;
+}
+
+.login-container input[type="submit"] {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.login-container input[type="submit"]:hover {
+    background-color: #2980b9;
+    
+}
+
+.error-message {
+    color: red;
+    margin-top: 15px;
+    font-size: 0.9em;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* Solicitud */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.solictud-body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    margin: 0;
+    padding: 0;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+
+        .solicitud-header {
+            background-image: url('Images/logo_clinica.png'); /* Placeholder image */
+            background-size: cover;
+            background-position: center;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            position: relative;
+            margin-bottom: 80px;
+        }
+
+        .solicitud-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+
+        .solicitud-header h1 {
+            position: relative;
+            z-index: 2;
+            font-size: 3rem;
+        }
+
+        .solicitud-container-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            max-width: 1100px;
+            margin: -50px auto 0;
+            padding: 20px;
+        }
+
+        /* Box para las instrucciones */
+        .solicitud-instructions {
+            background-color: #e9f7fc;
+            padding: 20px;
+            border-radius: 10px;
+            margin-right: 30px;
+            width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+
+        .solicitud-instructions h3 {
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+
+        .solicitud-instructions p {
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .solicitud-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 600px;
+        }
+
+        .solicitud-container h2 {
+            text-align: center;
+            color: #008AC9;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .solicitud-container h3 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .solicitud-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .solicitud-form .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0px;
+        }
+
+        .solicitud-form .input-group i {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            min-width: 40px;
+            text-align: center;
+            border-radius: 5px 0 0 5px;
+            margin-bottom: 10px;
+        }
+
+        .solicitud-form input, 
+        .solicitud-form textarea, 
+        .solicitud-form select {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .solicitud-form textarea {
+            height: 100px;
+        }
+
+        .solicitud-form .solicitud-submit-btn {
+            background-color: #00304A;
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .solicitud-form .solicitud-submit-btn:hover {
+            background-color: #008AC9;
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: space-around;
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .contact-info h4 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            color: #008AC9;
+        }
+
+        .contact-info p {
+            margin-bottom: 10px;
+            font-size: 1rem;
+            color: #34495e;
+        }
+
+/* Barra de progreso para archivos adjuntos */
+.progress {
+    display: none;
+    margin-top: 10px;
+    height: 20px;
+    background-color: #f3f3f3;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    width: 0;
+    height: 100%;
+    background-color: #007bff;
+    text-align: center;
+    line-height: 20px;
+    color: white;
+    transition: width 0.6s ease;
+}
+
+
+
+
+
+/* Documentos */
+
+.documento-body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f7f7f7;
+}
+
+.documento-container {
+    max-width: 800px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.documento-h2 {
+    color: #008AC9;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+}
+
+.documento-form-group label {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.documento-btn-primary {
+    color: white;
+    background-color: #00304A;
+    border-color: #00304A;
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2rem;
+}
+
+.documento-btn-primary:hover {
+    background-color: #008AC9;
+    border-color: #008AC9;
+}
+
+.documento-form-select {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    margin-top: 20px;
+} 
+
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.container-versop h1 {
+    text-align: center;
+    color: #008AC9;
+    margin-bottom: 20px;
+    margin-top: 20px;
+}
+
+.container-versop h6 {
+    text-align: center;
+    color: #000;
+    margin-bottom: 20px;
+    margin-top: 20px;
+}
+
+/* Layout de contenedores */
+.soporte-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    word-wrap: break-word;
+}
+
+/* Lista de solicitudes de soporte */
+.soporte-list {
+    width: 35%;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    max-height: 600px;
+}
+
+/* Caja de solicitud de soporte */
+.soporte-box {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.soporte-box:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-5px); /* Elevar un poco al hacer hover */
+}
+
+.soporte-box.active {
+    background-color: #d9ecf2;
+    border-left: 5px solid #008AC9; /* Resaltar solicitud activa */
+}
+
+.soporte-title {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.soporte-content {
+    margin-top: 5px;
+    color: #777;
+}
+
+/* Detalles de la solicitud con imagen de fondo */
+.soporte-detail {
+    width: 60%;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    right: -100%;
+    top: 0;
+    transition: right 0.5s ease, opacity 0.5s ease;
+    opacity: 0;
+    margin-top: 132px;
+    margin-right: 20px;
+}
+
+.soporte-detail.active {
+    right: 0;
+    opacity: 1;
+}
+
+.soporte-detail .soporte-title {
+    font-size: 1.7rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+/* Línea divisoria debajo del título */
+.soporte-detail .soporte-title::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: #ddd;
+    margin-top: 10px;
+}
+
+/* Separación para el contenido */
+.soporte-detail .soporte-content {
+    margin-top: 20px;
+    font-size: 1rem;
+    color: #555;
+    position: relative;
+}
+
+/* Línea divisoria debajo del contenido */
+.soporte-detail .soporte-content::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: #ddd;
+    margin-top: 10px;
+}
+
+.soporte-image {
+    margin-top: 25px;
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Espacio y estilos para la imagen permanente */
+.soporte-permanent-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 150px;
+    margin-top: 20px;
+    border-top: 2px solid #ddd; /* Línea divisoria */
+    padding-top: 20px;
+}
+
+.soporte-permanent-image {
+    max-width: 60%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Botones de acción para editar/eliminar */
+.soporte-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.soporte-actions button {
+    background-color: #008AC9;
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.soporte-actions button:hover {
+    background-color: #005f8c;
+}
+
+.soporte-actions button.delete {
+    background-color: #e74c3c;
+}
+
+.soporte-actions button.delete:hover {
+    background-color: #c0392b;
+}
+
+/* Subtítulos para cada sección */
+.soporte-detail .section-title {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #888;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Aumentar el espaciado entre secciones */
+.soporte-detail .soporte-content, 
+.soporte-detail .soporte-title, 
+.soporte-detail .soporte-image, 
+.soporte-detail .soporte-permanent-image-container {
+    margin-top: 15px;
+}
+
+/* Título del panel completo */
+.panel-heading {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
+}
+
+/* Estilos para la tabla */
+.table-container {
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+        }
+        .filter-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .filter-container form {
+            align-items: center;
+           margin-right: 30px;
+        }
+        /* Estilo del panel lateral */
+        .soporte-detail {
+            width: 400px;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            display: none;
+            position: absolute;
+            right: -100%;
+            top: 0;
+            transition: right 0.5s ease, opacity 0.5s ease;
+            opacity: 0;
+        }
+        .soporte-detail.active {
+            right: 0;
+            opacity: 1;
+        }
+        .soporte-detail .section-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .soporte-detail.active {
+            right: 0;
+            opacity: 1;
+        }
+        .soporte-detail .section-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #888;
+            margin-bottom: 5px;
+        }
+             /* Estilo para la tabla */
+             .table-container {
+            margin: 10px;
+            background-color: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            width: auto;
+            height: auto;
+            
+        }
+
+        .table th {
+            background-color: #00304A;
+            color: #fff;
+            text-align: center;
+            font-weight: 600;
+            padding: 15px;
+            border-top: none;
+        }
+
+        .table td {
+            text-align: center;
+            vertical-align: middle;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-overflow: ellipsis;  /* Añade puntos suspensivos (...) al final del texto que se desborda */
+        }
+
+        /* Sombra al hacer hover en las filas */
+        .table-hover tbody tr:hover {
+            background-color: #f9f9f9;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+
+        /* Botones estilizados */
+        .btn-primary {
+            background-color: #008AC9;
+            border-color: #008AC9;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #006c99;
+            border-color: #006c99;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            border-color: #e74c3c;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+            border-color: #c0392b;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .filter-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .table-container {
+                padding: 10px;
+            }
+
+            .table th, .table td {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
+        }
+
+
+.filter-container{
+    margin-left: 10px;
+}
+
+/* Hacer el gráfico más pequeño */
+#chartContainer {
+    max-width: 50%; /* Ajustar el tamaño máximo del gráfico */
+    margin: 0 auto;   /* Centrar el gráfico horizontalmente */
+}
+
+/* Tamaño del canvas (gráfico) */
+#estadoSolicitudesChart {
+    width: 100% !important; 
+    height: auto !important;  /* Reducimos la altura del gráfico */
+}
+
+.estadisticas{
+    max-width: 50%;
+}
+
+
+.titulo-home p{
+    text-align: center !important;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+}
+
+.carousel-caption {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2; /* Asegura que el texto esté sobre la imagen */
+    text-align: center;
+    color: white; /* Asegura que el texto sea visible */
+}
+
+.carousel-item {
+    position: relative;
+}
+
+/* Oscurecer la imagen para mejorar la legibilidad del texto */
+.carousel-item::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3); /* Capa negra semitransparente */
+    z-index: 1;
+}
+
+.carousel-caption h5, .carousel-caption p {
+    margin-top: 20px;
+}
+
+.carousel-caption h1 {
+    font-size: 2.2rem;
+}
+
+
+.footer {
+    background-color: #2c3e50;
+    color: white;
+    padding: 40px 0;
+}
+
+.footer-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.footer-section {
+    flex: 1;
+    margin: 20px;
+    text-align: center;
+}
+
+.footer-section h4 {
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+.footer-section p {
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.social-icons a {
+    color: white;
+    font-size: 20px;
+    margin: 0 10px;
+    text-decoration: none;
+}
+
+.social-icons a:hover {
+    color: #3498db;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding: 10px 0;
+    border-top: 1px solid #3f5367;
+    font-size: 14px;
+}
+
+.main-content {
+    display: block;
+    width: 100%; /* Asegúrate de que ocupe todo el ancho */
+}
+
+.footer {
+    width: 100%; /* Asegura que el footer ocupe todo el ancho */
+    clear: both;  /* Asegura que el footer esté debajo de todo el contenido */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.footer {
+    clear: both;
+    width: 100%;
+    background-color: #2c3e50;
+    color: white;
+    padding: 40px 0;
+}
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.main-content {
+    flex-grow: 1; /* El contenido principal se expande para llenar el espacio */
+}
+
