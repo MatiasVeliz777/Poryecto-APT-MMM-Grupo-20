@@ -1,0 +1,125 @@
+        /* Tus estilos CSS aquí */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            margin: 20px;
+        }
+        
+        .calendar, .events-list {
+            width: 45%;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        
+        .calendar .h2 {
+            margin-bottom: 50px;
+        }
+        
+        .calendar .titulo-calendar {
+            margin-bottom: 30px;
+        }
+        
+        .calendar table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .calendar th, .calendar td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        
+        .calendar th {
+            background-color: #00304A;
+            color: white;
+        }
+        
+        .calendar td.event-day {
+            background-color: rgba(170, 225, 252, 0.363);
+            cursor: pointer;
+        }
+        
+        .event-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-left: 4px solid #00304A;
+            background-color: #c7eafa3a;
+            border-radius: 4px;
+            position: relative;
+        }
+        
+        .event-header {
+            display: flex;
+            flex-direction: column; /* Alinea fecha y título en columna */
+            margin-bottom: 10px;
+        }
+        
+        .event-date {
+            font-size: 1.25rem; /* Tamaño de fuente para la fecha */
+            font-weight: bold;
+        }
+        
+        .event-title {
+            font-size: 1rem; /* Tamaño de fuente para el título */
+            margin-top: 5px; /* Espaciado entre la fecha y el título */
+        }
+        
+        .event-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .event-item p {
+            margin: 5px 0 0;
+        }
+        
+        .alert {
+            max-width: 400px;
+            margin: 20px;
+            text-align: center;
+        }
+        
+        .mensaje-popup {
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* Modificación para que la lista de eventos sea scrollable */
+        .events-list {
+            max-height: 500px; /* Altura máxima de la lista de eventos */
+            overflow-y: auto;  /* Scroll vertical si excede la altura */
+        }
+        
+        .calendar .d-flex {
+            background-color: #fff;
+        }
+        
+        .titulo-eventos {
+            margin-top: 10px;
+        }
+        
+        .btn-outline-danger, .btn-outline-dark {
+            margin-left: 5px;
+        }
+        
+        .button-container {
+            display: flex;
+            justify-content: center;
+        }
+        
+        
