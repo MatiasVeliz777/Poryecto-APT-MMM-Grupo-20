@@ -370,7 +370,7 @@ $conn->close();
 <body>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <div class="main-content">
-    <div class="wrapper">
+<div class="wrapper">
         <aside id="sidebar">
             <div class="d-flex">
                 <button class="toggle-btn" type="button">
@@ -383,6 +383,25 @@ $conn->close();
              <!-- Contenedor de la imagen de perfil -->
         <div class="profile-container text-center my-2">
         <img src="<?php 
+        // Ruta de la carpeta donde están las imágenes de perfil
+$carpeta_fotos = 'Images/fotos_personal/'; // Cambia esta ruta a la carpeta donde están tus fotos
+$imagen_default = 'Images/profile_photo/imagen_default.jpg'; // Ruta de la imagen predeterminada
+
+// Obtener el nombre del archivo de imagen desde la base de datos
+$nombre_imagen = $user_data['imagen']; // Se asume que este campo contiene solo el nombre del archivo
+
+// Construir la ruta completa de la imagen del usuario
+$ruta_imagen_usuario = $carpeta_fotos . $nombre_imagen;
+
+// Verificar si la imagen del usuario existe en la carpeta
+if (file_exists($ruta_imagen_usuario)) {
+    // Si la imagen existe, se usa esa ruta
+    $imagen_final = $ruta_imagen_usuario;
+} else {
+    // Si no existe, se usa la imagen predeterminada
+    $imagen_final = $imagen_default;
+    
+}
     // Verificar si la imagen del usuario existe en la carpeta
     if (file_exists($ruta_imagen_usuario)) {
         // Si la imagen existe, se usa esa ruta
@@ -392,6 +411,7 @@ $conn->close();
         echo $imagen_default;
     }
 ?>" class="profile-picture" alt="Foto de Perfil">
+
         </div>
             <ul class="sidebar-nav">
                 <li class="sidebar-item">
@@ -410,10 +430,30 @@ $conn->close();
                     </ul>
                 </li>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
-                        <i class="lni lni-agenda"></i>
-                        <span>Capacitaciones</span>
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#multi" aria-expanded="false" aria-controls="multi">
+                        <i class="lni lni-layout"></i>
+                        <span>Personal</span>
                     </a>
+                    <ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                    <?php if ($_SESSION['rol'] == 5): ?>
+                    <li class="sidebar-item">
+                            <a href="agregar_personal.php" class="sidebar-link">Agregar Empleado</a>
+                        </li>
+                    <li class="sidebar-item">
+                            <a href="empleado_mes.php" class="sidebar-link">Agregar Empleado del Mes</a>
+                        </li>
+                        <?php endif; ?>
+                    <li class="sidebar-item">
+                            <a href="empleados_meses.php" class="sidebar-link">Empleado del mes</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="personal_nuevo.php" class="sidebar-link">Nuevos empleados</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link">Cumpleaños</a>
+                        </li>
+                    </ul>
                 </li>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
@@ -426,10 +466,17 @@ $conn->close();
                             <a href="calendario.php" class="sidebar-link">Empresa</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">cumpleaños</a>
+                            <a href="cumpleaños.php" class="sidebar-link">cumpleaños</a>
                         </li>
                     </ul>
                 </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="lni lni-agenda"></i>
+                        <span>Capacitaciones</span>
+                    </a>
+                </li>
+                
 
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link">
@@ -443,36 +490,38 @@ $conn->close();
                         <span>Foro</span>
                     </a>
                 </li>
+                
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
-                        data-bs-target="#multi" aria-expanded="false" aria-controls="multi">
-                        <i class="lni lni-layout"></i>
-                        <span>Personal</span>
-                    </a>
-                    <ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
-                    <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Empleado del mes</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Nuevos empleados</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Cumpleaños</a>
-                        </li>
-                    </ul>
-                </li>
-                <li class="sidebar-item">
-                    <a href="solicitud.php" class="sidebar-link">
+                    <a href="solicitudes.php" class="sidebar-link">
                         <i class="lni lni-popup"></i>
                         <span>Solicitudes</span>
                     </a>
                 </li>
+                <?php if ($_SESSION['rol'] == 4): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#soporte" aria-expanded="false" aria-controls="soporte">
+                        <i class="lni lni-protection"></i>
+                        <span>Soporte Técnico</span>
+                    </a>
+                    <ul id="soporte" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="soporte.php" class="sidebar-link">Soporte Técnico</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="soporte_def.php" class="sidebar-link">Ver Solicitudes</a>
+                        </li>
+                    </ul>
+                </li>
+            <?php else: ?>
                 <li class="sidebar-item">
                     <a href="soporte.php" class="sidebar-link">
                         <i class="lni lni-cog"></i>
-                        <span>Soporte tecnico</span>
+                        <span>Soporte Informático</span>
                     </a>
                 </li>
+            <?php endif; ?>
+
             </ul>
             <div class="sidebar-footer">
                 <a href="#" class="sidebar-link">
@@ -481,7 +530,9 @@ $conn->close();
                 </a>
             </div>
         </aside>
-        <div class="main p-3">
+
+        <div class="main" style="padding-top: 15px;">
+        <div class="header-home">
             <div class="header">
                 <div class="ficha">Ficha:‎ ‎ ‎ <?php echo $usuario; ?></div>
                 <div class="user-nom">
@@ -492,7 +543,7 @@ $conn->close();
                     <span><?php echo $usuario; ?></span>
                     <div class="Salir"><a href="cerrar_sesion.php"><i class="fas fa-sign-out-alt"></i> Salir </a></div>
                 </div>
-                
+                </div>
         </div>
 
         <div class="container-sop">
