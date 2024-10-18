@@ -1,0 +1,319 @@
+/* Import Google font - Poppins */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+.wrapper-cum{
+  width: 450px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+}
+.wrapper-cum header{
+  display: flex;
+  align-items: center;
+  padding: 25px 30px 10px;
+  justify-content: space-between;
+}
+.calendar-box header .icons{
+  display: flex;
+}
+.calendar-box header .icons span{
+  height: 38px;
+  width: 38px;
+  margin: 0 1px;
+  cursor: pointer;
+  color: #878787;
+  text-align: center;
+  line-height: 38px;
+  font-size: 1.9rem;
+  user-select: none;
+  border-radius: 50%;
+}
+.icons span:last-child{
+  margin-right: -10px;
+}
+.calendar-box header .icons span:hover{
+  background: #f2f2f2;
+}
+.calendar-box header .current-date{
+  font-size: 1.45rem;
+  font-weight: 500;
+}
+.calendar-cum{
+  padding: 20px;
+}
+.calendar-cum ul{
+  display: flex;
+  flex-wrap: wrap;
+  list-style: none;
+  text-align: center;
+  padding: 0px;
+}
+.calendar-cum .days{
+  margin-bottom: 20px;
+}
+.calendar-cum li{
+  color: #333;
+  width: calc(100% / 7);
+  font-size: 1.07rem;
+}
+.calendar-cum .weeks li{
+  font-weight: 500;
+  cursor: default;
+}
+.calendar-cum .days li{
+  z-index: 1;
+  cursor: pointer;
+  position: relative;
+  margin-top: 30px;
+}
+.days li.inactive{
+  color: #aaa;
+}
+.days li.active{
+  color: #fff;
+}
+.days li::before{
+  position: absolute;
+  content: "";
+  left: 50%;
+  top: 50%;
+  height: 40px;
+  width: 40px;
+  z-index: -1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.days li.active::before{
+  background: #9B59B6;
+}
+.days li:not(.active):hover::before{
+  background: #f2f2f2;
+}
+
+
+
+
+.calendar .days li {
+  z-index: 1;
+  cursor: pointer;
+  position: relative;
+  margin-top: 30px;
+}
+
+.days li.inactive {
+  color: #aaa;
+}
+
+.days li.active {
+  color: #fff;
+}
+
+.days li::before {
+  position: absolute;
+  content: "";
+  left: 50%;
+  top: 50%;
+  height: 40px;
+  width: 40px;
+  z-index: -1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.days li.active::before {
+  background: #1CA5EA;
+}
+
+.days li:not(.active):hover::before {
+  background: #3F8BB1;
+}
+
+/* Nuevo estilo para los días con cumpleaños */
+.days li.birthday::before {
+  background: #A6D9F1;
+}
+
+.days li.birthday {
+  color: #fffefe;
+  font-weight: bold;
+}
+
+
+
+
+
+.days li::before {
+  position: absolute;
+  content: "";
+  left: 50%;
+  top: 50%;
+  height: 40px;
+  width: 40px;
+  z-index: -1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+
+/* Estilos de las tarjetas de cumpleaños */
+.birthday-list-box {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  width: 35%;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.birthday-card {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  padding: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.birthday-card .birthday-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.birthday-card .birthday-info h5 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+.birthday-card .birthday-info p {
+  margin: 0;
+  font-size: 18px;
+  color: #666;
+}
+
+.main-cumples{
+  justify-content: space-between;
+  display: grid;
+gap: column;
+}
+
+/* Estilos del contenedor principal */
+.main-container-cump {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: flex-start;
+  gap: 20px;
+  margin-top: 30px;
+  padding: 0 20px;
+  margin-bottom: 80px;
+}
+
+/* Estilos del calendario */
+.calendar-box {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.calendar {
+  width: 100%;
+}
+
+.calendar .days li {
+  z-index: 1;
+  cursor: pointer;
+  position: relative;
+  margin-top: 30px;
+}
+
+/* Estilos de las tarjetas de cumpleaños */
+        .birthday-list-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            width: 40%;
+            max-height: 505px;
+            overflow-y: auto;
+            justify-content: center;
+            align-items: center ;
+        }
+        
+      
+.birthday-card {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centrar horizontalmente el contenido */
+    background-color: #f9f9f9;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+    flex-direction: column; /* Cambiar la dirección a columna para centrar */
+}
+
+.birthday-card img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 15px; /* Espacio entre la imagen y la info */
+    border: 4px solid #1CA5EA;
+    object-position: 0 10%; /* Baja la imagen un poco */
+}
+
+.birthday-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra el texto y botón horizontalmente */
+    justify-content: center;
+    text-align: center; /* Asegura que el texto esté centrado */
+}
+
+.birthday-info h5{
+    margin: 0;
+    margin-bottom: 10px;
+}
+
+.birthday-info p{
+  font-size: 50px;
+}
+
+.greet-btn {
+    background-color: #007bff; /* Color azul agradable */
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-bottom: 5px;
+    margin-top: 10px;
+}
+
+.greet-btn:hover {
+    background-color: #0056b3; /* Color más oscuro en hover */
+}
+
+.greet-btn:active {
+    background-color: #003f7f; /* Color más oscuro cuando se presiona */
+}
+
+
+
+.days li.active::before {
+  background: #1CA5EA;
+}
