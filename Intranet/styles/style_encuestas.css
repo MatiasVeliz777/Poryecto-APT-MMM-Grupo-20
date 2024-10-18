@@ -1,0 +1,183 @@
+.rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: center;
+}
+.rating input {
+    display: none;
+}
+.rating label {
+    font-size: 2rem;
+    color: gray;
+    cursor: pointer;
+}
+.rating input:checked ~ label, .rating label:hover, .rating label:hover ~ label {
+    color: gold;
+}
+
+        /* Estilos para la disposición flexbox */
+.pregunta-calificacion {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.pregunta-label {
+    font-weight: bold;
+    flex: 1;
+}
+
+.pregunta button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.calificacion-label {
+    margin-left: 10px;
+}
+
+/* Para que la respuesta quede debajo */
+.respuesta-texto {
+    margin-top: 10px;
+}
+
+/* Asegurar espacio adecuado en las encuestas pendientes */
+.input-group1 {
+    margin-bottom: 20px;
+}
+
+.rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.rating input {
+    display: none;
+}
+
+.rating label {
+    font-size: 2.5rem;
+    color: gray;
+    cursor: pointer;
+}
+
+.rating input:checked ~ label,
+.rating label:hover,
+.rating label:hover ~ label {
+    color: gold;
+}
+
+.input-group1 {
+    margin-bottom: 30px;
+    padding: 15px;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+}
+
+.pregunta-contenedor {
+    margin-bottom: 15px;
+}
+
+.pregunta-calificacion {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.pregunta-label {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #333;
+    word-wrap: break-word;  /* Divide las palabras largas para que no se desborden */
+    white-space: normal;    /* Asegura que el texto pueda ocupar varias líneas */
+    max-width: 100%;        /* Asegura que el ancho máximo no exceda el contenedor */
+    margin-bottom: 10px;    /* Añade algo de espacio debajo del párrafo */
+}
+
+.calificacion-label .badge {
+    font-size: 0.9em;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.respuesta-contenedor {
+    margin-top: 10px;
+}
+
+.respuesta-texto {
+    font-size: 1em;
+    color: #555;
+    word-wrap: break-word;  /* Divide las palabras largas para que no se desborden */
+    white-space: normal;    /* Asegura que el texto pueda ocupar varias líneas */
+    max-width: 100%;        /* Asegura que el ancho máximo no exceda el contenedor */
+    margin-bottom: 10px;    /* Añade algo de espacio debajo del párrafo */
+}
+.solicitud-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 1000px;
+}
+
+.boton_pregs{
+    display: flex;
+    text-align: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+#scrollToSolicitudes{
+    background-color: #008AC9;
+color: white;
+padding: 15px;
+border: none;
+border-radius: 5px;
+font-size: 1.2rem;
+cursor: pointer;
+transition: 0.3s;
+display:block;
+}
+
+    #scrollToSolicitudes:hover {
+background-color: #00304A;
+
+}
+.calificacion-estrellas {
+display: flex;
+align-items: center;
+}
+
+.estrella {
+font-size: 24px;
+color: #ccc; /* Color por defecto para las estrellas vacías */
+}
+
+.estrella.llena {
+color: #FFD700; /* Color amarillo para las estrellas llenas */
+}
+.sidebar-item a{
+    text-decoration: none;
+   }
+
+
+
+.solicitud-submit-btn {
+    background-color: #00304A;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5%;
+    font-size: 1.1  rem;
+    cursor: pointer;
+    transition: 0.3s;
+
+}
+
+.solicitud-submit-btn:hover {
+    background-color: #008AC9;
+}
