@@ -1,5 +1,4 @@
 <?php
-include('conexion.php'); // Conexión a la base de datos
 session_start();
 
 // Verificar si el usuario ha iniciado sesión
@@ -9,25 +8,20 @@ if (!isset($_SESSION['usuario'])) {
 }
 
 $error = "";
+include("conexion.php");
 
 // Obtener el usuario que ha iniciado sesión
 $usuario = $_SESSION['usuario'];
 
 // Consultar los datos del empleado en la tabla 'personal'
-$sql = "SELECT rut, nombre, correo, imagen, fecha_nacimiento, cargo_id, rol_id
+$sql = "SELECT rut, nombre, correo, imagen, cargo_id, rol_id
         FROM personal 
-        WHERE rut = (SELECT rut FROM usuarios WHERE nombre_usuario = '$usuario')";
+        WHERE rut = (SELECT rut FROM usuarios WHERE nombre_usuario = '$usuario')";;
 $result = $conn->query($sql);
 
 // Verificar si se encontró el usuario
 if ($result->num_rows > 0) {
     $user_data = $result->fetch_assoc(); // Extraer los datos del usuario
-    // Guardar todos los datos del usuario en la sesión
-    $_SESSION['rut'] = $user_data['rut'];
-    $_SESSION['nombre'] = $user_data['nombre'];
-    $_SESSION['correo'] = $user_data['correo'];
-    $_SESSION['imagen'] = $user_data['imagen']; // Asegúrate de guardar la imagen aquí
-    $_SESSION['cargo_id'] = $user_data['cargo_id'];
     $rol = $user_data['rol_id'];
     // Guardar el rol en la sesión
     $_SESSION['rol'] = $rol;
@@ -35,45 +29,16 @@ if ($result->num_rows > 0) {
     $error = "No se encontraron datos para el usuario.";
 }
 
-// Consultar el cargo del usuario
+
+
 $sql_cargo = "SELECT NOMBRE_CARGO FROM cargos WHERE id = '" . $user_data['cargo_id'] . "'";
+
 $result_cargo = $conn->query($sql_cargo);
 
 if ($result_cargo->num_rows > 0) {
     $cargo_data = $result_cargo->fetch_assoc(); // Extraer los datos del usuario
 } else {
     $error = "No se encontraron datos para el cargo.";
-}
-
-// Función para traducir los nombres de los días y meses al español
-function traducir_fecha($fecha){
-    $dias = array("Sunday" => "Domingo", "Monday" => "Lunes", "Tuesday" => "Martes", 
-                  "Wednesday" => "Miércoles", "Thursday" => "Jueves", 
-                  "Friday" => "Viernes", "Saturday" => "Sábado");
-    
-    $meses = array("January" => "Enero", "February" => "Febrero", "March" => "Marzo", 
-                   "April" => "Abril", "May" => "Mayo", "June" => "Junio", 
-                   "July" => "Julio", "August" => "Agosto", "September" => "Septiembre", 
-                   "October" => "Octubre", "November" => "Noviembre", "December" => "Diciembre");
-    
-    $dia_nombre = $dias[date('l', strtotime($fecha))];
-    $dia_numero = date('d', strtotime($fecha));
-    $mes_nombre = $meses[date('F', strtotime($fecha))];
-    $anio = date('Y', strtotime($fecha));
-    
-    return "$dia_nombre, $dia_numero de $mes_nombre de $anio";
-}
-
-function traducir_mes($fecha){
-    $meses = array("January" => "Enero", "February" => "Febrero", "March" => "Marzo", 
-                   "April" => "Abril", "May" => "Mayo", "June" => "Junio", 
-                   "July" => "Julio", "August" => "Agosto", "September" => "Septiembre", 
-                   "October" => "Octubre", "November" => "Noviembre", "December" => "Diciembre");
-    
-    $mes_nombre = $meses[date('F', strtotime($fecha))];
-    $anio = date('Y', strtotime($fecha));
-    
-    return "$mes_nombre de $anio";
 }
 
 // Ruta de la carpeta donde están las imágenes de perfil
@@ -95,79 +60,42 @@ if (file_exists($ruta_imagen_usuario)) {
     $imagen_final = $imagen_default;
 }
 
-// Mostrar usuarios nuevos del mes actual
-$mes_actual = date('m');
-$año_actual = date('Y');
+// Obtener los archivos disponibles
+$sql_archivos = "SELECT id, nombre_archivo, tipo_archivo, ruta_archivo, descripcion FROM archivos";
+$result_archivos = $conn->query($sql_archivos);
 
-// Consulta para obtener usuarios nuevos del mes actual
-$sql_nuevos = "SELECT u.rut, u.nombre_usuario, u.fecha_creacion, p.nombre, p.fecha_nacimiento, c.NOMBRE_CARGO, p.imagen 
-               FROM usuarios u
-               INNER JOIN personal p ON u.rut = p.rut
-               INNER JOIN cargos c ON p.cargo_id = c.id
-               WHERE MONTH(u.fecha_creacion) = ? AND YEAR(u.fecha_creacion) = ?";
-
-$stmt_nuevos = $conn->prepare($sql_nuevos);
-$stmt_nuevos->bind_param('ii', $mes_actual, $año_actual);
-$stmt_nuevos->execute();
-$result_nuevos = $stmt_nuevos->get_result();
-
-// Obtener el mes y año actuales
-$mes_actual = date('m-Y');
-
-// Consulta para obtener el empleado del mes actual
-$query_emp_mes = "SELECT p.nombre, p.imagen, em.descripcion, c.NOMBRE_CARGO
-          FROM empleado_mes em 
-          JOIN personal p ON em.rut = p.rut 
-          JOIN cargos c on p.cargo_id = c.cargo_id
-          WHERE em.mes_year = '$mes_actual'
-          LIMIT 1";
-
-$result_emp_mes = $conn->query($query_emp_mes);
-
-
-
-// Procesar la solicitud cuando se envía el formulario
-$emp_mes_enviada = false;
-
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $rut = $_POST['empleado_rut'];
-    $descripcion = $_POST['descripcion'];
-    $mes_year = date('Y-m-d'); // Almacenar el primer día del mes actual
-
-
-    $sql = "INSERT INTO empleado_mes (rut, descripcion, mes_year) VALUES ('$rut', '$descripcion', '$mes_year')";
-    
-    if ($conn->query($sql) === TRUE) {
-        $emp_mes_enviada = true; // Marcamos que la solicitud se ha enviado
-    } else {
-        header('Location: empleado_mes.html?mensaje=Error al guardar el empleado del mes');
+// Verificar si hay resultados
+$archivos = [];
+if ($result_archivos->num_rows > 0) {
+    while ($row = $result_archivos->fetch_assoc()) {
+        $archivos[] = $row;
     }
 }
 
-// Consulta para obtener todos los cargos
-$sql_rol_ag = "SELECT id, rol FROM roles";
-$result_rol_ag = $conn->query($sql_rol_ag);
-
 $conn->close();
+ 
 ?>
 
+
 <!DOCTYPE php>
-<html lang="es">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Empleado del Mes</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Portal de Archivos</title>
     <link rel="icon" href="Images/icono2.png" type="image/x-icon">
     <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
     <link rel="stylesheet" href="styles/style.css">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
 </head>
+
 <body>
+    
 <div class="main-content">
 <div class="wrapper">
         <aside id="sidebar">
@@ -372,131 +300,229 @@ $conn->close();
                 </div>
                 </div>
         </div>
-        
-        <header class="solicitud-header">
-    <h1>Empleado del mes</h1>
+
+
+    <header class="solicitud-header">
+    <h1>Soporte Técnico</h1>
 </header>
 
-    <div class="solicitud-container-wrapper">
+
+<div class="solicitud-container-wrapper">
+    <!-- Box para las instrucciones -->
     <div class="solicitud-instructions">
-        <h3>Como seleccionar a un Empleado del Mes</h3>
-        <p>1. Selecciona al empleado del mes. Tambien puedes buscar por nombre/apellido para facilitar su seleccion. Solo abre el menu desplegable de los empleados y escribe el nombre y automaticamente se desplazara a la celda q buscas.</p>
-        <p>2. Agrega una descripcion de reconocmiento por el cual este usuario es elegido como empleado del mes.</p>
-
-
+        <h3>Instrucciones</h3>
+        <p>1. Ingresa el título del problema que estás experimentando.</p>
+        <p>2. Describe el problema con la mayor cantidad de detalles posible. <strong> Procura aclarar el Edificio y Piso en el cual se necesita el soporte.</strong></p>
+        <p>4. Indica el nivel de urgencia.</p>
+        <p>5. Puedes adjuntar una imagen o archivo relacionado con el problema si es necesario.</p>
     </div>
-        <div class="card shadow">
-            <div class="card-body">
-                <h1 class="card-title text-center mb-4">Selecciona al Empleado del Mes</h1>
 
-                <form method="POST" action="#">
-                    <!-- Selección de Empleado -->
-                    <div class="mb-3">
-                        <label for="empleado" class="form-label">Empleado:</label>
-                        <select name="empleado_rut" id="empleado" class="form-select" required>
-                            <option value="" disabled selected>Selecciona un empleado</option>
-                            <?php
-                            include('conexion.php'); 
+        <div class="documento-container"> 
+    <!-- Botón para abrir el modal -->
+    <?php if ($_SESSION['rol'] == 5): ?>
+    <div class="text-center mt-4">
+            <button class="btn btn-primary" data-toggle="modal" style="margin-bottom: 20px;" data-target="#subirArchivoModal">
+                Subir Nuevo Archivo
+            </button>
+        </div>
+        <?php endif; ?>
 
-                            // Consulta para obtener empleados
-                            $query = "SELECT rut, nombre FROM personal ORDER BY nombre ASC";
-                            $result = $conn->query($query);
+    <h2 class="documento-h2">Descargar Documento</h2>
+    <form action="#" method="POST">
+        <div class="documento-form-group">
+            <label for="documento">Hola <?php echo $user_data['nombre']; ?>, por favor</label>
+            <label for="documento">Seleccione el documento que desea descargar:</label>
+            <select id="documento" name="documento" class="documento-form-select" onchange="mostrarDescripcion()">
+                <option value="" disabled selected>Elija un documento</option>
+                <?php foreach ($archivos as $archivo): ?>
+                    <option value="<?php echo $archivo['id']; ?>" 
+                            data-descripcion="<?php echo htmlspecialchars($archivo['descripcion']); ?>" 
+                            data-ruta="<?php echo $archivo['ruta_archivo']; ?>">
+                        <?php echo $archivo['nombre_archivo']; ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div id="descripcion-contenedor" class="mt-3"></div>
+        <div id="acciones-contenedor" class="mt-3 d-flex gap-2" style="background-color: white; width:100%;">
+            <!-- Botones dinámicos aparecerán aquí -->
+        </div>
+    </form>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 
-                            // Ciclo para crear las opciones del select
-                            while($row = $result->fetch_assoc()) {
-                                echo "<option value='{$row['rut']}'>{$row['nombre']}</option>";
-                            }
-                            ?>
-                        </select>
+
+<!-- Modal para subir archivo -->
+<div class="modal fade" id="subirArchivoModal" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabel">Subir Nuevo Archivo</h5>
+                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true"></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario para subir archivos -->
+                <form action="documento_subir.php" method="POST" enctype="multipart/form-data">
+                    <div class="form-group" style="margin-top:10px;">
+                        <label for="nombre_archivo">Nombre del Documento:</label>
+                        <input type="text" name="nombre_documento" class="form-control" id="nombre_archivo" placeholder="Dale un nombre al documento"required>
                     </div>
-
-                    <!-- Vista previa del empleado -->
-                    <div class="preview text-center mb-4" id="preview" style="display:none;">
-                        <img id="empleadoImagen" src="" alt="Foto del empleado" class="img-thumbnail rounded-circle" style="max-width: 150px; margin-bottom: 20px;">
-                        <h3 id="empleadoNombre"></h3>
-                        <p id="empleadoCargo" class="text-muted"></p>
+                    <div class="form-group"style="margin-top:10px;">
+                        <label for="descripcion_archivo">Descripción del Documento:</label>
+                        <textarea name="descripcion" class="form-control" id="descripcion_archivo" rows="3" placeholder="Escribe una breve descipciond el docuemnto (Opcional)" required></textarea>
                     </div>
-
-                    <!-- Campo para la descripción -->
-                    <div class="mb-3">
-                        <label for="descripcion" class="form-label">Descripción del reconocimiento:</label>
-                        <textarea name="descripcion" id="descripcion" rows="5" class="form-control" placeholder="Escribe una descripción del reconocimiento" required></textarea>
+                    <div class="form-group"style="margin-top:20px;">
+                        <label for="archivo">Selecciona un archivo (PDF o DOC):</label>
+                        <input type="file" name="archivo" class="form-control" id="archivo" accept=".pdf,.doc,.docx" required>
                     </div>
-
-                    <!-- Botón de envío -->
-                    <button type="submit" class="btn btn-primary w-100">Guardar Empleado del Mes</button>
+                    <button type="submit" class="btn btn-primary btn-block" style="margin-top: 20px; width:100%;">Subir Archivo</button>
                 </form>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- jQuery y Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        // Al seleccionar un empleado en el dropdown
-        $('#empleado').on('change', function() {
-            var rut = $(this).val(); // Obtener el valor del empleado seleccionado
 
-            // Hacer una solicitud AJAX para obtener los detalles del empleado
-            $.ajax({
-                url: 'obtener_empleado.php',
-                type: 'GET',
-                data: { rut: rut },
-                dataType: 'json',
-                success: function(data) {
-                    if (data.error) {
-                        $('#preview').hide();
-                    } else {
-                        // Actualizar la vista previa con los datos obtenidos
-                        $('#empleadoImagen').attr('src', data.imagen).show();
-                        $('#empleadoNombre').text(data.nombre).show();
-                        $('#empleadoCargo').text(data.NOMBRE_CARGO).show();
-                        $('#preview').show();
-                    }
+</div>
+<script>
+function mostrarDescripcion() {
+    const documentoSelect = document.getElementById("documento");
+    const descripcionContenedor = document.getElementById("descripcion-contenedor");
+    const accionesContenedor = document.getElementById("acciones-contenedor");
+
+    // Obtener el documento seleccionado
+    const selectedOption = documentoSelect.options[documentoSelect.selectedIndex];
+    const descripcion = selectedOption.getAttribute("data-descripcion");
+    const ruta = selectedOption.getAttribute("data-ruta");
+    const idArchivo = selectedOption.value; // ID del archivo para eliminar
+
+    if (descripcion && ruta) {
+        descripcionContenedor.innerHTML = `<p>${descripcion}</p>`;
+
+        // Generar botones dinámicamente
+        let botonesHTML = `
+            <a href="${ruta}" class="btn btn-success"  style="width: 100%;" download>Descargar</a>
+        `;
+
+        // Mostrar el botón "Eliminar" solo si el rol del usuario es 5
+        <?php if ($_SESSION['rol'] == 5): ?>
+            botonesHTML += `
+                <button type="button" class="btn btn-danger" onclick="eliminarArchivo(${idArchivo})">Eliminar</button>
+            `;
+        <?php endif; ?>
+
+        accionesContenedor.innerHTML = botonesHTML;
+    } else {
+        descripcionContenedor.innerHTML = "<p class='text-danger'>Seleccione un documento válido.</p>";
+        accionesContenedor.innerHTML = ""; // Limpia los botones si no hay selección válida
+    }
+}
+
+function eliminarArchivo(idArchivo) {
+    // Mostrar alerta de confirmación con SweetAlert2
+    Swal.fire({
+        title: "¿Estás seguro?",
+        text: "No podrás recuperar este archivo después de eliminarlo.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar"
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Realizar solicitud AJAX para eliminar el archivo
+            fetch('documento_eliminar.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
                 },
-                error: function() {
-                    $('#preview').hide();
+                body: `archivo_id=${idArchivo}`
+            })
+            .then(response => response.json()) // Procesar respuesta como JSON
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: "success",
+                        title: "¡Eliminado!",
+                        text: data.message,
+                        confirmButtonText: "Aceptar"
+                    }).then(() => {
+                        location.reload(); // Recarga la página para actualizar la lista
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error",
+                        text: data.message,
+                        confirmButtonText: "Aceptar"
+                    });
                 }
+            })
+            .catch(error => {
+                Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Ocurrió un error al realizar la solicitud.",
+                    confirmButtonText: "Aceptar"
+                });
+                console.error("Error al realizar la solicitud:", error);
             });
-        });
-    </script>
+        }
+    });
+}
+</script>
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+    const message = params.get("message");
 
-    <?php if ($emp_mes_enviada) : ?>
-    <script>
+    if (status === "success") {
         Swal.fire({
-            title: '¡Solicitud enviada!',
-            text: 'Tu solicitud ha sido enviada correctamente',
-            icon: 'success',
-            confirmButtonText: 'OK'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Redirigir a otra página, por ejemplo, a "gracias.php"
-                window.location.href = 'home.php';
-            }
+            icon: "success",
+            title: "¡Éxito!",
+            text: message,
+            confirmButtonText: "Aceptar"
         });
-    </script>
-    <?php endif; ?>
+    } else if (status === "error") {
+        Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: message,
+            confirmButtonText: "Aceptar"
+        });
+    }
+});
+</script>
+ 
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-    <!-- Linking SwiperJS script -->
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
+        crossorigin="anonymous"></script>
+    <script src="scripts/script.js"></script>
 
-<!-- Linking custom script -->
-<script src="scripts/script_cards.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
-      crossorigin="anonymous"></script>
-  <script src="scripts/script.js"></script>
-  <footer class="footer">
+    <footer class="footer">
     <div class="footer-container">
         <div class="footer-section">
             <h4>Contáctanos</h4>
-            <p>Teléfono: +56 9 1234 5678</p>
-            <p>Email: contacto@clinicadesalud.cl</p>
+            <p>Teléfono: 56 22 928 1600</p>
+            <p>www.saludsanagustin.cl/csa/</p>
+        </div>
+        <div class="footer-section">
+            <h4>Horarios de atención</h4>
+            <p>De Lunes a Sábado:</p>
+            <p>Desde 07:00 hrs.</p>
+            <p>Domingo: Desde las 08:00</p>
         </div>
         <div class="footer-section">
             <h4>Síguenos en Redes Sociales</h4>
@@ -509,13 +535,13 @@ $conn->close();
         </div>
         <div class="footer-section">
             <h4>Dirección</h4>
-            <p>Avenida Siempre Viva 742</p>
-            <p>Santiago, Chile</p>
+            <p>San Agustín 473 – 442</p>
+            <p>Melipilla, Chile</p>
         </div>
     </div>
     <div class="footer-bottom">
         <p>&copy; 2024 Clínica de Salud. Todos los derechos reservados.</p>
     </div>
-</footer>  
+</footer> 
 </body>
 </html>

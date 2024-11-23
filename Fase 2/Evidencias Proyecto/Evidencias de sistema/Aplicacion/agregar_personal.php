@@ -43,8 +43,36 @@ if ($result_cargo->num_rows > 0) {
 
 // Procesar la solicitud cuando se envía el formulario
 $solicitudEnviada = false;
+$solicitud_opc = false; // Indica si la operación fue exitosa
+$error_opc = false;  
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // Procesar el formulario de creación de cargo
+    // Crear un cargo desde el modal
+    if (isset($_POST['action']) && $_POST['action'] === 'crear_cargo') {
+        $nombre_cargo = $_POST['nombre_cargo'];
+        $sql = "INSERT INTO cargos (NOMBRE_CARGO) VALUES ('$nombre_cargo')";
+        if ($conn->query($sql) === TRUE) {
+            $solicitud_opc = true; // Marca la operación como exitosa
+        } else {
+            $error_opc = true; // Marca la operación como fallida
+        }
+        exit;
+    }
+
+    // Crear un rol desde el modal
+    if (isset($_POST['action']) && $_POST['action'] === 'crear_rol') {
+        $nombre_rol = $_POST['nombre_rol'];
+        $sql = "INSERT INTO roles (rol) VALUES ('$nombre_rol')";
+        if ($conn->query($sql) === TRUE) {
+            $solicitud_opc = true; // Marca la operación como exitosa
+        } else {
+            $error_opc = true; // Marca la operación como fallida
+        }
+        exit;
+    }
+
+
     $apellidos = $_POST['apellidos'];
     $nombres = $_POST['nombres'];
     $rut_personal = $_POST['rut_personal'];
@@ -80,7 +108,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             exit();
         }
     } else {
-        $imagen_db = NULL;
+        $imagen_db = $nombre_completo;
     }
 
 
@@ -102,6 +130,28 @@ $result_cargo_ag = $conn->query($sql_cargo_ag);
 // Consulta para obtener todos los cargos
 $sql_rol_ag = "SELECT id, rol FROM roles";
 $result_rol_ag = $conn->query($sql_rol_ag);
+
+// Ruta de la carpeta donde están las imágenes de perfil
+$carpeta_fotos = 'Images/fotos_personal/'; // Cambia esta ruta a la carpeta donde están tus fotos
+$imagen_default = 'Images/profile_photo/imagen_default.jpg'; // Ruta de la imagen predeterminada
+
+// Obtener el nombre del archivo de imagen desde la base de datos
+$nombre_imagen = $user_data['imagen']; // Se asume que este campo contiene solo el nombre del archivo
+
+// Construir la ruta completa de la imagen del usuario
+$ruta_imagen_usuario = $carpeta_fotos . $nombre_imagen;
+
+// Verificar si la imagen del usuario existe en la carpeta
+if (file_exists($ruta_imagen_usuario)) {
+    // Si la imagen existe, se usa esa ruta
+    $imagen_final = $ruta_imagen_usuario;
+} else {
+    // Si no existe, se usa la imagen predeterminada
+    $imagen_final = $imagen_default;
+}
+
+
+
 $conn->close();
 ?>
 
@@ -144,25 +194,6 @@ $conn->close();
              <!-- Contenedor de la imagen de perfil -->
         <div class="profile-container text-center my-2">
         <img src="<?php 
-        // Ruta de la carpeta donde están las imágenes de perfil
-$carpeta_fotos = 'Images/fotos_personal/'; // Cambia esta ruta a la carpeta donde están tus fotos
-$imagen_default = 'Images/profile_photo/imagen_default.jpg'; // Ruta de la imagen predeterminada
-
-// Obtener el nombre del archivo de imagen desde la base de datos
-$nombre_imagen = $user_data['imagen']; // Se asume que este campo contiene solo el nombre del archivo
-
-// Construir la ruta completa de la imagen del usuario
-$ruta_imagen_usuario = $carpeta_fotos . $nombre_imagen;
-
-// Verificar si la imagen del usuario existe en la carpeta
-if (file_exists($ruta_imagen_usuario)) {
-    // Si la imagen existe, se usa esa ruta
-    $imagen_final = $ruta_imagen_usuario;
-} else {
-    // Si no existe, se usa la imagen predeterminada
-    $imagen_final = $imagen_default;
-    
-}
     // Verificar si la imagen del usuario existe en la carpeta
     if (file_exists($ruta_imagen_usuario)) {
         // Si la imagen existe, se usa esa ruta
@@ -193,7 +224,7 @@ if (file_exists($ruta_imagen_usuario)) {
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#multi" aria-expanded="false" aria-controls="multi">
-                        <i class="lni lni-layout"></i>
+                        <i class="lni lni-users"></i>
                         <span>Personal</span>
                     </a>
                     <ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
@@ -212,22 +243,19 @@ if (file_exists($ruta_imagen_usuario)) {
                             <a href="personal_nuevo.php" class="sidebar-link">Nuevos empleados</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Cumpleaños</a>
+                            <a href="cumpleaños.php" class="sidebar-link">Cumpleaños</a>
                         </li>
                     </ul>
                 </li>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#auth" aria-expanded="false" aria-controls="auth">
-                        <i class="lni lni-protection"></i>
+                        <i class="lni lni-calendar"></i>
                         <span>Eventos</span>
                     </a>
                     <ul id="auth" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
                         <li class="sidebar-item">
                             <a href="calendario.php" class="sidebar-link">Empresa</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="cumpleaños.php" class="sidebar-link">cumpleaños</a>
                         </li>
                     </ul>
                 </li>
@@ -237,27 +265,77 @@ if (file_exists($ruta_imagen_usuario)) {
                         <span>Capacitaciones</span>
                     </a>
                 </li>
-                
+
+                <?php if ($_SESSION['rol'] == 5): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#encuestas" aria-expanded="false" aria-controls="encuestas">
+                        <i class="lni lni-pencil"></i>
+                        <span>Encuestas</span>
+                    </a>
+                    <ul id="encuestas" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        
+                    <li class="sidebar-item">
+                            <a href="encuestas_prueba.php" class="sidebar-link">Crear encuesta</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="ver_enc_prueba.php" class="sidebar-link">Encuestas</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="respuestas.php" class="sidebar-link">Respuestas de encuestas</a>
+                        </li>
+                    </ul>
+                </li>
+                <?php else: ?>
+                    <li class="sidebar-item">
+                    <a href="ver_enc_prueba.php" class="sidebar-link">
+                    <i class="lni lni-pencil"></i>
+                    <span>Encuestas</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+            
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="lni lni-files"></i>
+                        <span>Documentos</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link">
-                    <i class="lni lni-layout"></i>
-                        <span>Documentacion</span>
+                    <i class="lni lni-comments"></i>
+                    <span>Foro</span>
                     </a>
                 </li>
+
+                <?php if ($_SESSION['rol'] == 4 || $_SESSION['rol'] == 5): ?>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#solicitudes" aria-expanded="false" aria-controls="solicitudes">
                         <i class="lni lni-popup"></i>
-                        <span>Foro</span>
+                        <span>Solicitudes</span>
                     </a>
+                    <ul id="solicitudes" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="solicitudes.php" class="sidebar-link">Solicitudes</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="solicitudes_usuarios.php" class="sidebar-link">Solicitudes de usuarios</a>
+                        </li>
+                    </ul>
                 </li>
-                
-                <li class="sidebar-item">
+                <?php else: ?>
+                    <li class="sidebar-item">
                     <a href="solicitudes.php" class="sidebar-link">
                         <i class="lni lni-popup"></i>
                         <span>Solicitudes</span>
                     </a>
                 </li>
+                <?php endif; ?>
+    
+
+
                 <?php if ($_SESSION['rol'] == 4): ?>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
@@ -328,6 +406,50 @@ if (file_exists($ruta_imagen_usuario)) {
     <div class="solicitud-container">
         <h2>Añadir Personal</h2>
         <h3>Ingrese los datos</h3>
+               
+        
+        <p>Si no encuentras un Cargo o Rol al cual quieres asignar al empleado, puedes entrar aqui y crear las opciones necesarios.</p>
+        <div class="button-container" style="display: flex;justify-content: center;align-items: center;margin-top: 20px; /* Espaciado opcional superior */  margin-bottom: 20px; /* Espaciado opcional inferior */">
+    
+        <!-- Botón para abrir el modal -->
+            <button type="button" class="solicitud-submit-btn" style="padding: 8px;font-size: 1rem;width: 40%; margin-bottom: 15px;" data-bs-toggle="modal" data-bs-target="#modalGestion">
+                Crear Rol o Cargo
+            </button>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal fade" id="modalGestion" tabindex="-1" aria-labelledby="modalGestionLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalGestionLabel">Crear Rol o Cargo</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Formulario para crear cargo -->
+                        <form id="formCrearCargo">
+                            <div class="mb-3">
+                                <label for="nombre_cargo" class="form-label">Nombre del Cargo:</label>
+                                <input type="text" id="nombre_cargo" name="nombre_cargo" class="form-control">
+                                <button type="button" class="btn btn-success mt-2" id="btnCrearCargo">Crear Cargo</button>
+                            </div>
+                        </form>
+
+                        <hr>
+
+                        <!-- Formulario para crear rol -->
+                        <form id="formCrearRol">
+                            <div class="mb-3">
+                                <label for="nombre_rol" class="form-label">Nombre del Rol:</label>
+                                <input type="text" id="nombre_rol" name="nombre_rol" class="form-control">
+                                <button type="button" class="btn btn-primary mt-2" id="btnCrearRol">Crear Rol</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <form class="solicitud-form" method="POST" action="agregar_personal.php" enctype="multipart/form-data">
             <!-- Campo para el título -->
             <div class="input-group">
@@ -424,6 +546,88 @@ if (file_exists($ruta_imagen_usuario)) {
     </div>
     
 <!-- SweetAlert2 -->
+
+<script>
+    // Crear Cargo
+    document.getElementById('btnCrearCargo').addEventListener('click', function () {
+        const nombreCargo = document.getElementById('nombre_cargo').value;
+
+        if (nombreCargo) {
+            fetch('', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=crear_cargo&nombre_cargo=${encodeURIComponent(nombreCargo)}`
+            })
+            .then(response => response.text())
+            .then(data => {
+                Swal.fire({
+                    title: '¡Opción Agregada Exitosamente!',
+                    text: 'El Cargo que acabas de crear se agregó correctamente.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    location.reload(); // Recargar opciones dinámicamente
+                });
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: '¡Error al Agregar!',
+                    text: 'Hubo un problema al intentar agregar el Cargo. Por favor, inténtalo de nuevo.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            });
+        } else {
+            Swal.fire({
+                title: 'Campo Vacío',
+                text: 'Por favor, ingresa un nombre para el Cargo.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+        }
+    });
+
+    // Crear Rol
+    document.getElementById('btnCrearRol').addEventListener('click', function () {
+        const nombreRol = document.getElementById('nombre_rol').value;
+
+        if (nombreRol) {
+            fetch('', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=crear_rol&nombre_rol=${encodeURIComponent(nombreRol)}`
+            })
+            .then(response => response.text())
+            .then(data => {
+                Swal.fire({
+                    title: '¡Opción Agregada Exitosamente!',
+                    text: 'El Rol que acabas de crear se agregó correctamente.',
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    location.reload(); // Recargar opciones dinámicamente
+                });
+            })
+            .catch(error => {
+                Swal.fire({
+                    title: '¡Error al Agregar!',
+                    text: 'Hubo un problema al intentar agregar el Rol. Por favor, inténtalo de nuevo.',
+                    icon: 'error',
+                    confirmButtonText: 'OK'
+                });
+            });
+        } else {
+            Swal.fire({
+                title: 'Campo Vacío',
+                text: 'Por favor, ingresa un nombre para el Rol.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+        }
+    });
+</script>
+
+
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -438,32 +642,58 @@ if (file_exists($ruta_imagen_usuario)) {
 </script>
 <?php endif; ?>
 
-    <script>
-        // Simulación de progreso en la carga de archivo (opcional)
-        document.querySelector('input[type="file"]').addEventListener('change', function() {
-            const progress = document.querySelector('.progress');
-            const progressBar = document.querySelector('.progress-bar');
-            progress.style.display = 'block';
 
-            let width = 0;
-            const interval = setInterval(function() {
-                if (width >= 100) {
-                    clearInterval(interval);
-                } else {
-                    width++;
-                    progressBar.style.width = width + '%';
-                    progressBar.textContent = width + '%';
-                }
-            }, 30);
+<!-- Alertas SweetAlert -->
+<?php if ($solicitud_opc) : ?>
+    <script>
+        Swal.fire({
+            title: '¡Opción Agregada Exitosamente!',
+            text: 'La opción de Cargo o Rol que acabas de crear se agregó correctamente',
+            icon: 'success',
+            confirmButtonText: 'OK'
         });
     </script>
+<?php endif; ?>
 
-</div></div>
+<?php if ($error_opc) : ?>
+    <script>
+        Swal.fire({
+            title: '¡Error al Agregar!',
+            text: 'Hubo un problema al intentar agregar la opción. Por favor, inténtalo de nuevo.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    </script>
+<?php endif; ?>
+    
+<script>
+    // Simulación de progreso en la carga de archivo (opcional)
+    document.querySelector('input[type="file"]').addEventListener('change', function() {
+        const progress = document.querySelector('.progress');
+        const progressBar = document.querySelector('.progress-bar');
+        progress.style.display = 'block';
+
+        let width = 0;
+        const interval = setInterval(function() {
+            if (width >= 100) {
+                clearInterval(interval);
+            } else {
+                width++;
+                progressBar.style.width = width + '%';
+                progressBar.textContent = width + '%';
+            }
+        }, 30);
+    });
+</script>
+
+</div>
+
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
         crossorigin="anonymous"></script>
-<script src="js/script.js"></script>
+<script src="scripts/script.js"></script>
 <!-- Agrega este script en tu HTML, preferentemente al final del cuerpo (body) -->
 <footer class="footer">
     <div class="footer-container">

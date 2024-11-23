@@ -2,7 +2,7 @@
 include('conexion.php');
 
 // Consulta para obtener todos los empleados del mes
-$sql_empleados_mes = "SELECT p.nombre, p.imagen, em.descripcion, c.NOMBRE_CARGO, em.mes_year
+$sql_empleados_mes = "SELECT p.nombre, p.imagen, em.descripcion, c.NOMBRE_CARGO, em.mes_year, em.id
                       FROM empleado_mes em 
                       JOIN personal p ON em.rut = p.rut 
                       JOIN cargos c ON p.cargo_id = c.id
@@ -125,38 +125,50 @@ $result_nuevos = $stmt_nuevos->get_result();
 // Obtener el mes y año actuales
 $mes_actual = date('m-Y');
 
-// Consulta para obtener el empleado del mes actual
-$query_emp_mes = "SELECT p.nombre, p.imagen, em.descripcion, c.NOMBRE_CARGO
-          FROM empleado_mes em 
-          JOIN personal p ON em.rut = p.rut 
-          JOIN cargos c on p.cargo_id = c.cargo_id
-          WHERE em.mes_year = '$mes_actual'
-          LIMIT 1";
-
-$result_emp_mes = $conn->query($query_emp_mes);
-
-
-
 // Procesar la solicitud cuando se envía el formulario
 $emp_mes_enviada = false;
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $rut = $_POST['empleado_rut'];
-    $descripcion = $_POST['descripcion'];
-    $mes_year = date('m-Y'); // Mes y año actuales
-
-    $sql = "INSERT INTO empleado_mes (rut, descripcion, mes_year) VALUES ('$rut', '$descripcion', '$mes_year')";
-    
-    if ($conn->query($sql) === TRUE) {
-        $emp_mes_enviada = true; // Marcamos que la solicitud se ha enviado
-    } else {
-        header('Location: empleado_mes.html?mensaje=Error al guardar el empleado del mes');
-    }
-}
 
 // Consulta para obtener todos los cargos
 $sql_rol_ag = "SELECT id, rol FROM roles";
 $result_rol_ag = $conn->query($sql_rol_ag);
+
+$tipo_mensaje = ''; // Variable para el tipo de mensaje
+$mensaje = ''; // Variable para el contenido del mensaje
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['actualizar_empleado'])) {
+        // Consulta de actualización
+        $id = $_POST['id'];
+        $descripcion = $_POST['descripcion'];
+        
+        $sql_update = "UPDATE empleado_mes SET descripcion = '$descripcion' WHERE id = '$id'";
+        
+        if ($conn->query($sql_update) === TRUE) {
+            $tipo_mensaje = 'success';
+            $mensaje = 'El empleado del mes ha sido actualizado correctamente.';
+        } else {
+            $tipo_mensaje = 'error';
+            $mensaje = 'Hubo un error al actualizar el empleado del mes.';
+        }
+    }
+
+    if (isset($_POST['confirmar_eliminar_empleado'])) {
+        // Consulta de eliminación
+        $id = $_POST['id'];
+        
+        $sql_delete = "DELETE FROM empleado_mes WHERE id = '$id'";
+        
+        if ($conn->query($sql_delete) === TRUE) {
+            $tipo_mensaje = 'success';
+            $mensaje = 'El empleado del mes ha sido eliminado correctamente.';
+        } else {
+            $tipo_mensaje = 'error';
+            $mensaje = 'Hubo un error al eliminar el empleado del mes.';
+        }
+    }
+}
+
 
 $conn->close();
 ?>
@@ -168,11 +180,9 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Empleado del Mes</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" href="Images/icono2.png" type="image/x-icon">
     <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
     <link rel="stylesheet" href="styles/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
@@ -182,9 +192,17 @@ $conn->close();
         .card-body {
             flex-grow: 1;
     padding: 20px;
-    max-height: 650px; /* Limitar la altura máxima del cuerpo de la tarjeta */
+    max-height: 250px; /* Limitar la altura máxima del cuerpo de la tarjeta */
     overflow: auto; /* Hacer que el contenido restante sea scrolleable si excede el límite */
     scrollbar-width: none; /* Para Firefox */
+}
+.card:hover {
+    transform: scale(1.05);
+    transition: 0.2s ease;
+    cursor: pointer;
+}
+.card{
+    transition: 0.2s ease;
 }
 
 
@@ -205,25 +223,6 @@ $conn->close();
              <!-- Contenedor de la imagen de perfil -->
         <div class="profile-container text-center my-2">
         <img src="<?php 
-        // Ruta de la carpeta donde están las imágenes de perfil
-$carpeta_fotos = 'Images/fotos_personal/'; // Cambia esta ruta a la carpeta donde están tus fotos
-$imagen_default = 'Images/profile_photo/imagen_default.jpg'; // Ruta de la imagen predeterminada
-
-// Obtener el nombre del archivo de imagen desde la base de datos
-$nombre_imagen = $user_data['imagen']; // Se asume que este campo contiene solo el nombre del archivo
-
-// Construir la ruta completa de la imagen del usuario
-$ruta_imagen_usuario = $carpeta_fotos . $nombre_imagen;
-
-// Verificar si la imagen del usuario existe en la carpeta
-if (file_exists($ruta_imagen_usuario)) {
-    // Si la imagen existe, se usa esa ruta
-    $imagen_final = $ruta_imagen_usuario;
-} else {
-    // Si no existe, se usa la imagen predeterminada
-    $imagen_final = $imagen_default;
-    
-}
     // Verificar si la imagen del usuario existe en la carpeta
     if (file_exists($ruta_imagen_usuario)) {
         // Si la imagen existe, se usa esa ruta
@@ -254,7 +253,7 @@ if (file_exists($ruta_imagen_usuario)) {
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#multi" aria-expanded="false" aria-controls="multi">
-                        <i class="lni lni-layout"></i>
+                        <i class="lni lni-users"></i>
                         <span>Personal</span>
                     </a>
                     <ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
@@ -273,22 +272,19 @@ if (file_exists($ruta_imagen_usuario)) {
                             <a href="personal_nuevo.php" class="sidebar-link">Nuevos empleados</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Cumpleaños</a>
+                            <a href="cumpleaños.php" class="sidebar-link">Cumpleaños</a>
                         </li>
                     </ul>
                 </li>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#auth" aria-expanded="false" aria-controls="auth">
-                        <i class="lni lni-protection"></i>
+                        <i class="lni lni-calendar"></i>
                         <span>Eventos</span>
                     </a>
                     <ul id="auth" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
                         <li class="sidebar-item">
                             <a href="calendario.php" class="sidebar-link">Empresa</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="cumpleaños.php" class="sidebar-link">cumpleaños</a>
                         </li>
                     </ul>
                 </li>
@@ -298,32 +294,82 @@ if (file_exists($ruta_imagen_usuario)) {
                         <span>Capacitaciones</span>
                     </a>
                 </li>
-                
+
+                <?php if ($_SESSION['rol'] == 5): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#encuestas" aria-expanded="false" aria-controls="encuestas">
+                        <i class="lni lni-pencil"></i>
+                        <span>Encuestas</span>
+                    </a>
+                    <ul id="encuestas" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        
+                    <li class="sidebar-item">
+                            <a href="encuestas_prueba.php" class="sidebar-link">Crear encuesta</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="ver_enc_prueba.php" class="sidebar-link">Encuestas</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="respuestas.php" class="sidebar-link">Respuestas de encuestas</a>
+                        </li>
+                    </ul>
+                </li>
+                <?php else: ?>
+                    <li class="sidebar-item">
+                    <a href="ver_enc_prueba.php" class="sidebar-link">
+                    <i class="lni lni-pencil"></i>
+                    <span>Encuestas</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+            
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="lni lni-files"></i>
+                        <span>Documentos</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link">
-                    <i class="lni lni-layout"></i>
-                        <span>Documentacion</span>
+                    <i class="lni lni-comments"></i>
+                    <span>Foro</span>
                     </a>
                 </li>
+
+                <?php if ($_SESSION['rol'] == 4 || $_SESSION['rol'] == 5): ?>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#solicitudes" aria-expanded="false" aria-controls="solicitudes">
                         <i class="lni lni-popup"></i>
-                        <span>Foro</span>
+                        <span>Solicitudes</span>
                     </a>
+                    <ul id="solicitudes" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="solicitudes.php" class="sidebar-link">Solicitudes</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="solicitudes_usuarios.php" class="sidebar-link">Solicitudes de usuarios</a>
+                        </li>
+                    </ul>
                 </li>
-                
-                <li class="sidebar-item">
+                <?php else: ?>
+                    <li class="sidebar-item">
                     <a href="solicitudes.php" class="sidebar-link">
                         <i class="lni lni-popup"></i>
                         <span>Solicitudes</span>
                     </a>
                 </li>
+                <?php endif; ?>
+    
+
+
                 <?php if ($_SESSION['rol'] == 4): ?>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#soporte" aria-expanded="false" aria-controls="soporte">
-                        <i class="lni lni-protection"></i>
+                        <i class="lni lni-cog"></i>
                         <span>Soporte Técnico</span>
                     </a>
                     <ul id="soporte" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
@@ -372,10 +418,13 @@ if (file_exists($ruta_imagen_usuario)) {
     <h1>Historial Empleados Del Mes</h1>
 </header>
 
-<div class="solicitud-container-wrapper">
+<div class="solicitud-container-wrapper" style="margin-top: -80px;">
     <div class="container">
-        <h2 class="text-center mb-4">Empleados del Mes</h2>
-        <div class="row">
+    <h2 style="width: 100%; text-align: center;">Empleado del mes</h2>
+    <p style="text-align: center; margin: 0 50px 0 50px">Este es el apartado de Empleado del mes, aquí podrás ver todos los empleados de los meses pasados de la empresa, 
+                                                        buscar por quien gustes y ver sus razones por cumplir con su grata funcion laboral!</p>
+
+        <div class="row" style="margin-top: 20px;">
             <?php if ($result_empleados_mes->num_rows > 0): ?>
                 <?php while ($row = $result_empleados_mes->fetch_assoc()): 
 
@@ -397,64 +446,142 @@ if (file_exists($ruta_imagen_usuario)) {
 
                     // Traducir el mes y año
                     $mes_y_anio = traducir_mes($row['mes_year']);
-                ?>
-                
-                <div class="col-md-4 mb-4">
-                    <div class="card shadow">
-                        <!-- Encabezado del mes y año -->
-                        <h3 class="text-center" style="color: #008AC9;"><?php echo $mes_y_anio; ?></h3>
-                        <img src="<?php echo $imagen_final; ?>" class="empleado-mes-imagen" alt="Foto de <?php echo $row['nombre']; ?>" style="max-height: 250px; object-fit: cover;">
-                        <h5 class="cards-new-employees-name"><?php echo $row['nombre']; ?></h5>
+                    // Separar el mes y el año
+                    $fecha_parts = explode(' de ', $mes_y_anio);
+                    $mes = $fecha_parts[0];
+                    $anio = $fecha_parts[1];
+                    ?>
+                    <div class="col-md-4 mb-4">
+                        <div class="card shadow position-relative">
+                            <!-- Encabezado del mes con botón alineado a la derecha -->
+                            <div class="d-flex justify-content-center align-items-center position-relative" style="background-color: white;">
+                                <h3 class="text-center" style="color: #008AC9; width:280px; margin: 0; flex-grow: 1;"><?php echo $mes; ?></h3>
+                                <!-- Botón alineado al final -->
+                                <?php if ($rol == 5): ?>
+                                    <button type="button" class="btn btn-primary position-absolute end-0" style="margin-right: 0px;" data-bs-toggle="modal" data-bs-target="#empleadoModal<?php echo $row['id']; ?>">
+                                        <i class="lni lni-cog"></i>
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                            <h5 class="text-center" style="color: #008AC9; margin-top: 0px;"><?php echo $anio; ?></h5>
+                            
+                            <img src="<?php echo $imagen_final; ?>" class="empleado-mes-imagen" alt="Foto de <?php echo $row['nombre']; ?>" style="max-height: 250px; object-fit: cover;">
+                            <h5 class="cards-new-employees-name text-center"><?php echo $row['nombre']; ?></h5>
 
-                        <div class="card-body">
-                            <p class="empleado-mes-cargo"><strong>Cargo:</strong> <?php echo $row['NOMBRE_CARGO']; ?></p>
-                            <p class="empleado-mes-descripcion"><strong>Descripción:</strong> <?php echo $row['descripcion']; ?></p>
+                            <div class="card-body">
+                                <p class="empleado-mes-cargo"><strong>Cargo:</strong> <?php echo $row['NOMBRE_CARGO']; ?></p>
+                                <p class="empleado-mes-descripcion"><strong>Descripción:</strong> <?php echo $row['descripcion']; ?></p>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <?php endwhile; ?>
-            <?php else: ?>
+
+
+                    <!-- Modal -->
+                    <div class="modal fade" id="empleadoModal<?php echo $row['id']; ?>" tabindex="-1" aria-labelledby="empleadoModalLabel<?php echo $row['id']; ?>" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="empleadoModalLabel<?php echo $row['id']; ?>">Actualizar datos de <?php echo $row['nombre']; ?></h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form action="" method="post">
+                                        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                                        <div class="mb-3">
+                                            <label for="nombre<?php echo $row['id']; ?>" class="form-label">Nombre</label>
+                                            <input type="text" class="form-control" id="nombre<?php echo $row['id']; ?>" value="<?php echo $row['nombre']; ?>" readonly>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="cargo<?php echo $row['id']; ?>" class="form-label">Cargo</label>
+                                            <input type="text" class="form-control" id="cargo<?php echo $row['id']; ?>" value="<?php echo $row['NOMBRE_CARGO']; ?>" readonly>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="descripcion<?php echo $row['id']; ?>" class="form-label">Descripción</label>
+                                            <textarea class="form-control" style="height: 100px;" id="descripcion<?php echo $row['id']; ?>" name="descripcion"><?php echo $row['descripcion']; ?></textarea>
+                                        </div>
+                                        <button type="submit" name="actualizar_empleado" class="btn btn-success">Guardar cambios</button>
+                                        <button type="button" class="btn btn-danger" onclick="confirmarEliminacion(<?php echo $row['id']; ?>)">Eliminar</button>
+                                       </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                            </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
                 <p class="text-center">No se han registrado empleados del mes aún.</p>
             <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
 
-    </div>
-
-    <!-- jQuery y Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <?php if ($emp_mes_enviada) : ?>
-    <script>
+<script>
+function confirmarEliminacion(id) {
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: "¡Esta acción no se puede deshacer!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Crear un formulario y enviarlo para eliminar
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = ''; // Tu misma página o la URL deseada
+
+            const inputId = document.createElement('input');
+            inputId.type = 'hidden';
+            inputId.name = 'id';
+            inputId.value = id;
+
+            const inputConfirm = document.createElement('input');
+            inputConfirm.type = 'hidden';
+            inputConfirm.name = 'confirmar_eliminar_empleado';
+            inputConfirm.value = true;
+
+            form.appendChild(inputId);
+            form.appendChild(inputConfirm);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if (!empty($tipo_mensaje)) : ?>
         Swal.fire({
-            title: '¡Solicitud enviada!',
-            text: 'Tu solicitud ha sido enviada correctamente',
-            icon: 'success',
+            title: '<?php echo $tipo_mensaje == 'success' ? '¡Éxito!' : 'Error'; ?>',
+            text: '<?php echo $mensaje; ?>',
+            icon: '<?php echo $tipo_mensaje; ?>',
             confirmButtonText: 'OK'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Redirigir a otra página, por ejemplo, a "gracias.php"
-                window.location.href = 'home.php';
+                window.location.href = 'empleados_meses.php';
             }
         });
-    </script>
     <?php endif; ?>
+});
+</script>
+
 
     <!-- Linking SwiperJS script -->
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <!-- Linking custom script -->
-<script src="js/script_cards.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
-      crossorigin="anonymous"></script>
-  <script src="js/script.js"></script>
+<script src="scripts/script_cards.js"></script>
+  <script src="scripts/script.js"></script>
   <footer class="footer">
     <div class="footer-container">
         <div class="footer-section">
@@ -481,5 +608,10 @@ if (file_exists($ruta_imagen_usuario)) {
         <p>&copy; 2024 Clínica de Salud. Todos los derechos reservados.</p>
     </div>
 </footer>  
+<!-- Enlaces de JavaScript antes del cierre de </body> -->
+<!-- JavaScript de Bootstrap 4 -->
+ 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
 <div class="main-content">
-    <div class="wrapper">
+<div class="wrapper">
         <aside id="sidebar">
             <div class="d-flex">
                 <button class="toggle-btn" type="button">
@@ -184,33 +184,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#multi" aria-expanded="false" aria-controls="multi">
-                        <i class="lni lni-layout"></i>
+                        <i class="lni lni-users"></i>
                         <span>Personal</span>
                     </a>
                     <ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                    <?php if ($_SESSION['rol'] == 5): ?>
                     <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Empleado del mes</a>
+                            <a href="agregar_personal.php" class="sidebar-link">Agregar Empleado</a>
+                        </li>
+                    <li class="sidebar-item">
+                            <a href="empleado_mes.php" class="sidebar-link">Agregar Empleado del Mes</a>
+                        </li>
+                        <?php endif; ?>
+                    <li class="sidebar-item">
+                            <a href="empleados_meses.php" class="sidebar-link">Empleado del mes</a>
                         </li>
                         <li class="sidebar-item">
                             <a href="personal_nuevo.php" class="sidebar-link">Nuevos empleados</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Cumpleaños</a>
+                            <a href="cumpleaños.php" class="sidebar-link">Cumpleaños</a>
                         </li>
                     </ul>
                 </li>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#auth" aria-expanded="false" aria-controls="auth">
-                        <i class="lni lni-protection"></i>
+                        <i class="lni lni-calendar"></i>
                         <span>Eventos</span>
                     </a>
                     <ul id="auth" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
                         <li class="sidebar-item">
                             <a href="calendario.php" class="sidebar-link">Empresa</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">cumpleaños</a>
                         </li>
                     </ul>
                 </li>
@@ -220,33 +225,102 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <span>Capacitaciones</span>
                     </a>
                 </li>
-                
+
+                <?php if ($_SESSION['rol'] == 5): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#encuestas" aria-expanded="false" aria-controls="encuestas">
+                        <i class="lni lni-pencil"></i>
+                        <span>Encuestas</span>
+                    </a>
+                    <ul id="encuestas" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        
+                    <li class="sidebar-item">
+                            <a href="encuestas_prueba.php" class="sidebar-link">Crear encuesta</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="ver_enc_prueba.php" class="sidebar-link">Encuestas</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="respuestas.php" class="sidebar-link">Respuestas de encuestas</a>
+                        </li>
+                    </ul>
+                </li>
+                <?php else: ?>
+                    <li class="sidebar-item">
+                    <a href="ver_enc_prueba.php" class="sidebar-link">
+                    <i class="lni lni-pencil"></i>
+                    <span>Encuestas</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+            
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="lni lni-files"></i>
+                        <span>Documentos</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link">
-                    <i class="lni lni-layout"></i>
-                        <span>Documentacion</span>
+                    <i class="lni lni-comments"></i>
+                    <span>Foro</span>
                     </a>
                 </li>
+
+                <?php if ($_SESSION['rol'] == 4 || $_SESSION['rol'] == 5): ?>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#solicitudes" aria-expanded="false" aria-controls="solicitudes">
                         <i class="lni lni-popup"></i>
-                        <span>Foro</span>
+                        <span>Solicitudes</span>
                     </a>
+                    <ul id="solicitudes" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="solicitudes.php" class="sidebar-link">Solicitudes</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="solicitudes_usuarios.php" class="sidebar-link">Solicitudes de usuarios</a>
+                        </li>
+                    </ul>
                 </li>
-                
-                <li class="sidebar-item">
-                    <a href="solicitud.php" class="sidebar-link">
+                <?php else: ?>
+                    <li class="sidebar-item">
+                    <a href="solicitudes.php" class="sidebar-link">
                         <i class="lni lni-popup"></i>
                         <span>Solicitudes</span>
                     </a>
                 </li>
+                <?php endif; ?>
+    
+
+
+                <?php if ($_SESSION['rol'] == 4): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#soporte" aria-expanded="false" aria-controls="soporte">
+                        <i class="lni lni-protection"></i>
+                        <span>Soporte Técnico</span>
+                    </a>
+                    <ul id="soporte" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="soporte.php" class="sidebar-link">Soporte Técnico</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="soporte_def.php" class="sidebar-link">Ver Solicitudes</a>
+                        </li>
+                    </ul>
+                </li>
+            <?php else: ?>
                 <li class="sidebar-item">
                     <a href="soporte.php" class="sidebar-link">
                         <i class="lni lni-cog"></i>
-                        <span>Soporte Informatico</span>
+                        <span>Soporte Informático</span>
                     </a>
                 </li>
+            <?php endif; ?>
+
             </ul>
             <div class="sidebar-footer">
                 <a href="#" class="sidebar-link">
@@ -257,6 +331,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         </aside>
 
         <div class="main" style="padding-top: 15px;">
+        <div class="header-home">
             <div class="header">
                 <div class="ficha">Ficha:‎ ‎ ‎ <?php echo $usuario; ?></div>
                 <div class="user-nom">
@@ -267,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <span><?php echo $usuario; ?></span>
                     <div class="Salir"><a href="cerrar_sesion.php"><i class="fas fa-sign-out-alt"></i> Salir </a></div>
                 </div>
-                
+                </div>
         </div>
 
         <header class="solicitud-header">
@@ -309,8 +384,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="input-group" id="opciones-respuesta" style="display:none;">
                 <h3>Ingrese las opciones de respuesta</h3>
                 <i class="fa-solid fa-question-circle"></i>
-                <input type="text" name="opcion[]" placeholder="Opción 1">
-                <input type="text" name="opcion[]" placeholder="Opción 2">
+                <input style="margin-top:10px" type="text" name="opcion[]" placeholder="Opción 1">
+                <input style="margin-top:10px" type="text" name="opcion[]" placeholder="Opción 2">
                 <div class="button-opcion" style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
                     <button type="button" id="agregar-opcion" class="solicitud-submit-btn" style="margin-top:10px;">Agregar otra opción</button>
                 </div>
@@ -385,14 +460,17 @@ $conn->close();
     });
 
     // Agregar más opciones dinámicamente
-    document.getElementById('agregar-opcion').addEventListener('click', function() {
-        const opcionesDiv = document.getElementById('opciones-respuesta');
-        const nuevaOpcion = document.createElement('input');
-        nuevaOpcion.setAttribute('type', 'text');
-        nuevaOpcion.setAttribute('name', 'opcion[]');
-        nuevaOpcion.setAttribute('placeholder', 'Nueva opción');
-        opcionesDiv.appendChild(nuevaOpcion);
-    });
+document.getElementById('agregar-opcion').addEventListener('click', function() {
+    const opcionesDiv = document.getElementById('opciones-respuesta');
+    const nuevaOpcion = document.createElement('input');
+    nuevaOpcion.setAttribute('type', 'text', );
+    nuevaOpcion.setAttribute('name', 'opcion[]');
+    nuevaOpcion.setAttribute('style', 'margin-top:10px');
+    nuevaOpcion.setAttribute('placeholder', 'Nueva opción');
+    
+    // Insertar el nuevo input antes del botón de agregar
+    opcionesDiv.insertBefore(nuevaOpcion, opcionesDiv.querySelector('.button-opcion'));
+});
 </script>
 <!-- Importar SweetAlert -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -572,11 +650,11 @@ $(document).ready(function () {
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <!-- Linking custom script -->
-<script src="js/script_cards.js"></script>
+<script src="scripts/script_cards.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
       crossorigin="anonymous"></script>
-  <script src="js/script.js"></script>
+  <script src="scripts/script.js"></script>
   <footer class="footer">
     <div class="footer-container">
         <div class="footer-section">
