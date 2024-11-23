@@ -1,0 +1,335 @@
+
+.event-row {
+    display: flex;
+    justify-content: center; /* Centra horizontalmente las columnas dentro del contenedor */
+    flex-wrap: wrap; /* Permite que las columnas se distribuyan en varias filas si es necesario */
+    gap: 15px; /* Añade espacio entre las columnas */
+}
+
+.event-column {
+    display: flex;
+    justify-content: center; /* Centra horizontalmente los elementos dentro de la columna */
+    align-items: center; /* Centra verticalmente los elementos dentro de la columna */
+    flex-direction: column; /* Asegura que el contenido esté apilado verticalmente */
+    width: 200px; /* Ajusta el ancho de cada columna según lo necesites */
+    box-sizing: border-box; /* Asegura que el padding y el borde se incluyan en el ancho total */
+    padding: 10px;
+    margin-bottom: 15px; /* Espacio entre las filas de miniaturas */
+}
+
+
+
+.event-row > .event-column {
+    padding: 0 8px;
+    cursor: pointer;
+}
+
+.event-row:after {
+    content: "";
+    display: table;
+    clear: both;
+    transform: scale(1.02);
+  }
+
+  .event-column {
+    float: left;
+    width: 25%;
+  }
+
+  .evento-modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    padding: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.76);
+    margin-left: 20px;
+  }
+
+  .evento-modal-content {
+    position: relative;
+    background-color: #fefefe00;
+    margin: auto;
+    padding: 0;
+    width: 90%;
+    max-width: 1200px;
+  }
+
+  .evento-close {
+    color: white;
+    position: absolute;
+    top: 10px;
+    right: 25px;
+    font-size: 45px;
+    font-weight: bold;
+  }
+
+  .evento-close:hover,
+  .evento-close:focus {
+    color: #999;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  
+.evento-mySlides {
+    display: flex; /* Usar flexbox para centrar el contenido */
+    justify-content: center; /* Centrar horizontalmente */
+    align-items: center; /* Centrar verticalmente */
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 100%; /* Asegúrate de que la imagen no se salga del contenedor */
+    height: 60vh; /* Mantiene la proporción correcta */
+    position: relative; /* Importante para posicionar los botones dentro del contenedor */
+}
+
+.evento-mySlides img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain; /* Mantiene la proporción de la imagen */
+}
+
+/* Centrar los botones prev y next verticalmente en la mitad de la imagen */
+.evento-prev, .evento-next {
+    position: absolute;
+    top: 30%; /* Alineado a la mitad del contenedor de la imagen */
+    transform: translateY(-50%); /* Centrado verticalmente */
+    width: auto;
+    padding: 16px;
+    color: white;
+    font-weight: bold;
+    font-size: 20px;
+    cursor: pointer;
+    transition: 0.6s ease;
+    user-select: none;
+    border-radius: 3px;
+    background-color: rgba(0, 0, 0, 0.5); /* Añade un fondo para mayor visibilidad */
+}
+
+.evento-prev:hover, .evento-next:hover {
+    background-color: rgba(0, 0, 0, 0.8); /* Más oscuro al pasar el ratón */
+}
+
+/* Posicionar el botón de siguiente (next) a la derecha de la imagen */
+.evento-next {
+    right: 0;
+    border-radius: 3px 0 0 3px;
+}
+
+/* Posicionar el botón de anterior (prev) a la izquierda de la imagen */
+.evento-prev {
+    left: 0;
+    border-radius: 0 3px 3px 0;
+}
+
+  .evento-numbertext {
+    color: #f2f2f2;
+    font-size: 12px;
+    padding: 8px 12px;
+    position: absolute;
+    top: 0;
+  }
+
+  .evento-caption-container {
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0);
+    padding: 2px 16px;
+    color: white;
+    margin-top: 10px;
+  }
+
+  img.evento-demo {
+    opacity: 0.6;
+  }
+
+  .active,
+  .evento-demo:hover {
+    opacity: 1;
+  }
+
+  img.evento-hover-shadow {
+    transition: 0.5s;
+    border-radius: 5px 5px;  }
+
+  .evento-hover-shadow:hover {
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    transform: scale(1.1);
+  }
+
+  .evento-container {
+    display: flex;
+    justify-content: space-between; /* Deja espacio entre las dos columnas */
+    align-items: flex-start; /* Alinea las dos columnas en la parte superior */
+}
+
+.datos-evento {
+    flex: 1; /* Ocupará el 50% del espacio disponible */
+    padding-right: 20px; /* Añade un espacio a la derecha */
+}
+
+.lista-asistentes {
+    flex: 1; /* Ocupará el 50% del espacio disponible */
+}
+
+.listar-asist {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; /* Centra las miniaturas de los asistentes */
+    gap: 15px;
+}
+
+.asistente-item {
+    text-align: center;
+    width: 100px;
+    height: 100px;
+    margin-bottom: 30px;
+}
+
+/* Slideshow container */
+.evento-slider-container {
+  max-width: 1000px;
+  position: relative;
+  margin: auto;
+}
+
+/* Hide the images by default */
+.evento-slide {
+  display: none;
+}
+
+/* Next & previous buttons */
+.evento-prev-btn, .evento-next-btn {
+  cursor: pointer;
+  position: absolute;
+  top: 50%;
+  width: auto;
+  margin-top: -22px;
+  padding: 16px;
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  transition: 0.6s ease;
+  border-radius: 0 3px 3px 0;
+  user-select: none;
+}
+
+.evento-next-btn {
+  right: 0;
+  border-radius: 3px 0 0 3px;
+}
+
+.evento-prev-btn:hover, .evento-next-btn:hover {
+  background-color: rgba(0,0,0,0.8);
+}
+
+/* Caption text */
+.evento-slide-caption {
+  color: #f2f2f2;
+  font-size: 15px;
+  padding: 8px 12px;
+  position: absolute;
+  bottom: 8px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Number text (1/3 etc) */
+.evento-slide-number {
+  color: #f2f2f2;
+  font-size: 12px;
+  padding: 8px 12px;
+  position: absolute;
+  top: 0;
+}
+
+/* The dots/bullets/indicators */
+.evento-dot-control {
+  cursor: pointer;
+  height: 15px;
+  width: 15px;
+  margin: 0 2px;
+  background-color: #bbb;
+  border-radius: 50%;
+  display: inline-block;
+  transition: background-color 0.6s ease;
+}
+
+.active-dot, .evento-dot-control:hover {
+  background-color: #717171;
+}
+
+/* Fading animation */
+.evento-fade-effect {
+  animation-name: evento-fade;
+  animation-duration: 1.5s;
+}
+
+@keyframes evento-fade {
+  from {opacity: .4} 
+  to {opacity: 1}
+}
+
+.custom-slideshow-container {
+  max-width: 100%;
+  position: relative;
+  margin: auto;
+  overflow: hidden;
+}
+
+.custom-slideshow-slide {
+  display: flex;
+  justify-content: space-between;
+}
+
+.custom-column {
+  flex: 1;
+  margin: 0 5px;
+}
+
+.custom-column img {
+  border-radius: 10px;
+  transition: transform 0.3s;
+}
+
+.custom-column img:hover {
+  transform: scale(1.05);
+}
+
+.custom-prev, .custom-next {
+  cursor: pointer;
+  position: absolute;
+  top: 50%;
+  width: auto;
+  padding: 16px;
+  margin-top: -22px;
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  border-radius: 0 3px 3px 0;
+  user-select: none;
+}
+
+.custom-next {
+  right: 0;
+  border-radius: 3px 0 0 3px;
+}
+
+.custom-prev:hover, .custom-next:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.custom-hover-shadow {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.custom-modal-content {
+  max-width: 90%;
+  margin: auto;
+  position: relative;
+}
+
+

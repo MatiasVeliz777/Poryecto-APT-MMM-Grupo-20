@@ -1,10 +1,9 @@
 <?php
+include('conexion.php');
 session_start();
 
 $error = "";
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    include('conexion.php');
 
     // Verifica si se están recibiendo los campos correctos
     if (isset($_POST['usuario']) && isset($_POST['password'])) {
@@ -12,18 +11,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Encriptamos la contraseña usando SHA2 con 256 bits
         $contrasena = hash('sha256', $_POST['password']); 
 
-        // Consulta para verificar el usuario y la contraseña encriptada
-        $sql = "SELECT * FROM usuarios WHERE nombre_usuario='$usuario' AND contraseña='$contrasena'";
+        // Primera consulta para verificar si el usuario existe
+        $sql = "SELECT * FROM usuarios WHERE nombre_usuario='$usuario'";
         $result = $conn->query($sql);
 
         if ($result->num_rows > 0) {
-            // Login exitoso
-            $_SESSION['usuario'] = $usuario;
-            header('location: perfil.php');
-            exit();
+            // Usuario existe, ahora verificamos la contraseña y el estado
+            $user = $result->fetch_assoc();
+
+            if ($user['contraseña'] === $contrasena) {
+                if ($user['activo'] == 1) {
+                    // Login exitoso
+                    $_SESSION['usuario'] = $usuario;
+                    header('location: home.php');
+                    exit();
+                } else {
+                    // Usuario inactivo
+                    $error = "Su cuenta está inactiva. Por favor, contacte al administrador.";
+                }
+            } else {
+                // Contraseña incorrecta
+                $error = "Contraseña incorrecta.";
+            }
         } else {
-            // Login fallido
-            $error = "Usuario o contraseña incorrectos.";
+            // Usuario no encontrado
+            $error = "Usuario no encontrado.";
         }
     } else {
         $error = "Los campos de usuario y contraseña son requeridos.";

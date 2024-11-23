@@ -304,7 +304,17 @@ $rut_usuario = $_SESSION['rut'];
     .estrella.llena {
         color: #FFD700; /* Color amarillo para las estrellas llenas */
     }
-    
+    @media (max-width: 768px) {
+    .solicitud-container {
+        width: 100%;
+        padding: 20px;
+    }
+
+    .boton_pregs{
+        width: 100%;
+    }
+
+}
     </style>
 </head>
 <body>
@@ -352,33 +362,38 @@ $rut_usuario = $_SESSION['rut'];
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#multi" aria-expanded="false" aria-controls="multi">
-                        <i class="lni lni-layout"></i>
+                        <i class="lni lni-users"></i>
                         <span>Personal</span>
                     </a>
                     <ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                    <?php if ($_SESSION['rol'] == 5): ?>
                     <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Empleado del mes</a>
+                            <a href="agregar_personal.php" class="sidebar-link">Agregar Empleado</a>
+                        </li>
+                    <li class="sidebar-item">
+                            <a href="empleado_mes.php" class="sidebar-link">Agregar Empleado del Mes</a>
+                        </li>
+                        <?php endif; ?>
+                    <li class="sidebar-item">
+                            <a href="empleados_meses.php" class="sidebar-link">Empleado del mes</a>
                         </li>
                         <li class="sidebar-item">
                             <a href="personal_nuevo.php" class="sidebar-link">Nuevos empleados</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Cumpleaños</a>
+                            <a href="cumpleaños.php" class="sidebar-link">Cumpleaños</a>
                         </li>
                     </ul>
                 </li>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#auth" aria-expanded="false" aria-controls="auth">
-                        <i class="lni lni-protection"></i>
+                        <i class="lni lni-calendar"></i>
                         <span>Eventos</span>
                     </a>
                     <ul id="auth" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
                         <li class="sidebar-item">
                             <a href="calendario.php" class="sidebar-link">Empresa</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">cumpleaños</a>
                         </li>
                     </ul>
                 </li>
@@ -388,33 +403,102 @@ $rut_usuario = $_SESSION['rut'];
                         <span>Capacitaciones</span>
                     </a>
                 </li>
-                
+
+                <?php if ($_SESSION['rol'] == 5): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#encuestas" aria-expanded="false" aria-controls="encuestas">
+                        <i class="lni lni-pencil"></i>
+                        <span>Encuestas</span>
+                    </a>
+                    <ul id="encuestas" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        
+                    <li class="sidebar-item">
+                            <a href="encuestas_prueba.php" class="sidebar-link">Crear encuesta</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="ver_enc_prueba.php" class="sidebar-link">Encuestas</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="respuestas.php" class="sidebar-link">Respuestas de encuestas</a>
+                        </li>
+                    </ul>
+                </li>
+                <?php else: ?>
+                    <li class="sidebar-item">
+                    <a href="ver_enc_prueba.php" class="sidebar-link">
+                    <i class="lni lni-pencil"></i>
+                    <span>Encuestas</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+            
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="lni lni-files"></i>
+                        <span>Documentos</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link">
-                    <i class="lni lni-layout"></i>
-                        <span>Documentacion</span>
+                    <i class="lni lni-comments"></i>
+                    <span>Foro</span>
                     </a>
                 </li>
+
+                <?php if ($_SESSION['rol'] == 4 || $_SESSION['rol'] == 5): ?>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#solicitudes" aria-expanded="false" aria-controls="solicitudes">
                         <i class="lni lni-popup"></i>
-                        <span>Foro</span>
+                        <span>Solicitudes</span>
                     </a>
+                    <ul id="solicitudes" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="solicitudes.php" class="sidebar-link">Solicitudes</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="solicitudes_usuarios.php" class="sidebar-link">Solicitudes de usuarios</a>
+                        </li>
+                    </ul>
                 </li>
-                
-                <li class="sidebar-item">
-                    <a href="solicitud.php" class="sidebar-link">
+                <?php else: ?>
+                    <li class="sidebar-item">
+                    <a href="solicitudes.php" class="sidebar-link">
                         <i class="lni lni-popup"></i>
                         <span>Solicitudes</span>
                     </a>
                 </li>
+                <?php endif; ?>
+    
+
+
+                <?php if ($_SESSION['rol'] == 4): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#soporte" aria-expanded="false" aria-controls="soporte">
+                        <i class="lni lni-protection"></i>
+                        <span>Soporte Técnico</span>
+                    </a>
+                    <ul id="soporte" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="soporte.php" class="sidebar-link">Soporte Técnico</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="soporte_def.php" class="sidebar-link">Ver Solicitudes</a>
+                        </li>
+                    </ul>
+                </li>
+            <?php else: ?>
                 <li class="sidebar-item">
                     <a href="soporte.php" class="sidebar-link">
                         <i class="lni lni-cog"></i>
-                        <span>Soporte Informatico</span>
+                        <span>Soporte Informático</span>
                     </a>
                 </li>
+            <?php endif; ?>
+
             </ul>
             <div class="sidebar-footer">
                 <a href="#" class="sidebar-link">
@@ -423,7 +507,9 @@ $rut_usuario = $_SESSION['rut'];
                 </a>
             </div>
         </aside>
+
         <div class="main" style="padding-top: 15px;">
+        <div class="header-home">
             <div class="header">
                 <div class="ficha">Ficha:‎ ‎ ‎ <?php echo $usuario; ?></div>
                 <div class="user-nom">
@@ -434,8 +520,10 @@ $rut_usuario = $_SESSION['rut'];
                     <span><?php echo $usuario; ?></span>
                     <div class="Salir"><a href="cerrar_sesion.php"><i class="fas fa-sign-out-alt"></i> Salir </a></div>
                 </div>
-                
+                </div>
         </div>
+
+
         <header class="solicitud-header">
         <h1>Portal de encuestas</h1>
     </header>
@@ -702,6 +790,8 @@ $conn->close();
     </div>
 </div>
 
+<script src="scripts/script.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -899,8 +989,7 @@ document.getElementById('form-encuesta').addEventListener('submit', function(e) 
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <!-- Linking custom script -->
-<script src="js/script.js"></script>
-<script src="js/script_cards.js"></script>
+<script src="scripts/script_cards.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
       crossorigin="anonymous"></script>

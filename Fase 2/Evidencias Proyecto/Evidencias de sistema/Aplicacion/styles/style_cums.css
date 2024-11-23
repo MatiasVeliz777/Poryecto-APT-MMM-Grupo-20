@@ -127,7 +127,7 @@
 }
 
 .days li.active::before {
-  background: #1CA5EA;
+  background: #23A8F2;
 }
 
 .days li:not(.active):hover::before {
@@ -302,6 +302,7 @@ gap: column;
     transition: background-color 0.3s ease;
     margin-bottom: 5px;
     margin-top: 10px;
+    
 }
 
 .greet-btn:hover {
@@ -316,4 +317,32 @@ gap: column;
 
 .days li.active::before {
   background: #1CA5EA;
+}
+
+/* Estilo para los días con eventos */
+.days li.event-day::before {
+  background: #A6D9F1; /* Color para días con eventos */
+}
+
+.days li.event-day {
+  color: #fff;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .main-container-cump {
+    flex-direction: column; /* Cambia a diseño en columna */
+    align-items: center; /* Centra los elementos en la columna */
+    gap: 10px; /* Ajusta el espacio entre los elementos */
+    padding: 0 10px; /* Reduce el padding para pantallas pequeñas */
+  }
+
+  .main-container-cump > div {
+    width: 100%; /* Asegura que los elementos ocupen el ancho completo */
+  }
+
+  .event-list-box{
+    width: 300px;
+  }
+  
 }

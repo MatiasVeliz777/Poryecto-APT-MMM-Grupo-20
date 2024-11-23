@@ -26,20 +26,30 @@ body {
   margin: 0 40px;
   overflow: hidden;
   border-radius: 25px;
+  padding: 30px;
 }
 
 .cards-new-employees-wrapper {
   height: auto; /* Deja que la altura se ajuste automáticamente */
 }
-
 .cards-new-employees-card {
   border-radius: 25px;
   background-color: #FFF;
-  height: 450px; /* Ajustar la altura de las tarjetas */
+  height: 450px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   width: 300px;
+  transition: transform 0.3s, box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
+  
+}
+
+.cards-new-employees-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
 }
 
 .cards-new-employees-image,
@@ -54,7 +64,7 @@ body {
   position: relative;
   row-gap: 5px;
   padding: 25px 0;
-  flex-grow: 0; /* Asegura que la imagen no estire la tarjeta */
+  flex-grow: 0;
 }
 
 .cards-new-employees-overlay {
@@ -63,8 +73,13 @@ body {
   top: 0;
   height: 100%;
   width: 100%;
-  background-color: #4070F4;
+  background-color: #339bf0;
   border-radius: 25px 25px 0 25px;
+  transition: background-color 0.3s;
+}
+
+.cards-new-employees-card:hover .cards-new-employees-overlay {
+  background-color: #2879c1; /* Cambiar a un tono más oscuro en el hover */
 }
 
 .cards-new-employees-overlay::before,
@@ -75,7 +90,7 @@ body {
   bottom: -40px;
   height: 40px;
   width: 40px;
-  background-color: #4070F4;
+  background-color: #339bf0;
 }
 
 .cards-new-employees-overlay::after {
@@ -97,7 +112,7 @@ body {
   width: 40%;
   object-fit: cover;
   border-radius: 50%;
-  border: 4px solid #4070F4;
+  border: 4px solid #339bf0;
 }
 
 .cards-new-employees-content {
@@ -106,7 +121,7 @@ body {
   align-items: center;
   padding: 10px 14px;
   flex-grow: 1; /* Permitir que este contenido estire el card */
-  justify-content: flex-end;
+  text-align: center;
 }
 
 .cards-new-employees-name {
@@ -132,7 +147,7 @@ body {
   font-size: 16px;
   color: #FFF;
   padding: 8px 16px;
-  background-color: #4070F4;
+  background-color: #339bf0;
   border-radius: 6px;
   margin: 14px;
   cursor: pointer;
@@ -205,12 +220,13 @@ body {
   object-fit: cover;
   object-position: 0 10%; /* Baja la imagen un poco */
   border-radius: 50%;
-  border: 4px solid #4070F4;
+  border: 4px solid #0ba5ec;
+  
 }
 
 
 .swiper-navBtn {
-  color: #6E93f7;
+  color: #339bf0;
   transition: color 0.3s ease;
 }
 

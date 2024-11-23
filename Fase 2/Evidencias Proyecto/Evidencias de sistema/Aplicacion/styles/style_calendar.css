@@ -58,6 +58,7 @@
             background-color: #c7eafa3a;
             border-radius: 4px;
             position: relative;
+            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease; /* Transiciones para varios efectos */
         }
         
         .event-header {
@@ -122,4 +123,22 @@
             justify-content: center;
         }
         
+.event-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.event-link:hover {
+    background-color: #f8f9fa; /* Cambia el fondo al hacer hover */
+    cursor: pointer;
+}
+
+.event-item:hover {
+    background-color: #CCE4F7; /* Cambia el fondo al hacer hover */
+    cursor: pointer;
+    transform: scale(1.02); /* Agranda un poquito el elemento */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Agrega una ligera sombra */
+    cursor: pointer;
+    transition: 0.3s;
+}
         

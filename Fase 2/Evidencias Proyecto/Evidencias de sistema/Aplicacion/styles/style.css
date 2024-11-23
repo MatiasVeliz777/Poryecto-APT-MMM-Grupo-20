@@ -22,6 +22,8 @@ h1 {
 
 body {
     font-family: 'Poppins', sans-serif;
+    font-family: 'Poppins', sans-serif !important;
+
 }
 
 .wrapper {
@@ -77,7 +79,7 @@ body {
 }
 
 .header-home.expanded{
-    margin-left: 80px; /* Asegura que el contenido no quede debajo de la barra */
+    margin-left: 58px; /* Asegura que el contenido no quede debajo de la barra */
     transition: margin-left .25s ease-in-out; /* Suave transición cuando la barra se expande */
 }
 
@@ -361,7 +363,7 @@ a.sidebar-link:hover {
     max-height: 150px; /* Ajusta este valor según el tamaño de la imagen y el nombre */
 }
 
-
+/* Contenedor de la imagen de perfil *//* Contenedor de la imagen de perfil *//* Contenedor de la imagen de perfil *//* Contenedor de la imagen de perfil */
 
 /* Contenedor de la imagen de perfil */
 .profile-container {
@@ -451,7 +453,7 @@ a.sidebar-link:hover {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
-    background: url('Images/fondo_login.jpg') no-repeat center center fixed !important;
+    background: url('../Images/stefan-grage-Y4MKctPwIrw-unsplash.jpg') no-repeat center center fixed;
     background-size: cover;
     display: flex;
     justify-content: center;
@@ -465,7 +467,7 @@ a.sidebar-link:hover {
     border-radius: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     text-align: center;
-    width: 300px;
+    width: 330px;
 }
 
 .login-container img {
@@ -548,7 +550,7 @@ a.sidebar-link:hover {
 
 
         .solicitud-header {
-            background-image: url('Images/logo_clinica.png'); /* Placeholder image */
+            background-image: url('../Images/logo_clinica.png'); /* Placeholder image */
             background-size: cover;
             background-position: center;
             height: 250px;
@@ -584,11 +586,12 @@ a.sidebar-link:hover {
             max-width: 1100px;
             margin: -50px auto 0;
             padding: 20px;
+            margin-bottom: 30px;
         }
 
         /* Box para las instrucciones */
         .solicitud-instructions {
-            background-color: #e9f7fc;
+            background-color: #c8edf8;
             padding: 20px;
             border-radius: 10px;
             margin-right: 30px;
@@ -604,7 +607,8 @@ a.sidebar-link:hover {
 
         .solicitud-instructions p {
             margin-bottom: 10px;
-            font-size: 1rem;
+            font-size: 1.2rem;
+            
         }
 
         .solicitud-container {
@@ -717,10 +721,6 @@ a.sidebar-link:hover {
     transition: width 0.6s ease;
 }
 
-
-
-
-
 /* Documentos */
 
 .documento-body {
@@ -729,7 +729,7 @@ a.sidebar-link:hover {
 }
 
 .documento-container {
-    max-width: 800px;
+    max-width: 600px;
     margin: 50px auto;
     padding: 20px;
     background-color: white;
@@ -1078,14 +1078,14 @@ a.sidebar-link:hover {
 
         /* Botones estilizados */
         .btn-primary {
-            background-color: #008AC9;
-            border-color: #008AC9;
+            background-color: #00304A;
+            border-color: #00304A;
             transition: background-color 0.3s ease;
         }
 
         .btn-primary:hover {
-            background-color: #006c99;
-            border-color: #006c99;
+            background-color: #008AC9;
+            border-color: #008AC9;
         }
 
         .btn-danger {
@@ -1123,7 +1123,7 @@ a.sidebar-link:hover {
 
 /* Hacer el gráfico más pequeño */
 #chartContainer {
-    max-width: 50%; /* Ajustar el tamaño máximo del gráfico */
+    max-width: 100%; /* Ajustar el tamaño máximo del gráfico */
     margin: 0 auto;   /* Centrar el gráfico horizontalmente */
 }
 
@@ -1134,9 +1134,19 @@ a.sidebar-link:hover {
 }
 
 .estadisticas{
-    max-width: 50%;
+    max-width: 100%;
 }
 
+/* Títulos y secciones */
+.titulo-home h2 {
+    font-size: 1.5rem;
+    margin: 20px;
+}
+
+.titulo-home p {
+    font-size: 0.9rem;
+    margin: 20px;
+}
 
 .titulo-home p{
     text-align: center !important;
@@ -1166,7 +1176,7 @@ a.sidebar-link:hover {
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: 80%;
     background-color: rgba(0, 0, 0, 0.3); /* Capa negra semitransparente */
     z-index: 1;
 }
@@ -1196,6 +1206,7 @@ a.sidebar-link:hover {
     flex: 1;
     margin: 20px;
     text-align: center;
+    margin-right: 100px;
 }
 
 .footer-section h4 {
@@ -1228,7 +1239,6 @@ a.sidebar-link:hover {
 
 .main-content {
     display: block;
-    width: 100%; /* Asegúrate de que ocupe todo el ancho */
 }
 
 .footer {
@@ -1255,4 +1265,218 @@ a.sidebar-link:hover {
 .main-content {
     flex-grow: 1; /* El contenido principal se expande para llenar el espacio */
 }
+
+
+
+.solicitud-container-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    max-width: 1100px;
+    margin: -50px auto 0;
+    padding: 20px;
+    margin-bottom: 100px;
+}
+
+/* Box para las instrucciones */
+.solicitud-instructions {
+    background-color: #d1f0fa;
+    padding: 20px;
+    border-radius: 10px;
+    margin-right: 30px;
+    width: 300px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+.solicitud-instructions h3 {
+    color: #007bff;
+    margin-bottom: 10px;
+}
+
+.solicitud-instructions p {
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+
+.solicitud-container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 600px;
+}
+
+.solicitud-container h2 {
+    text-align: center;
+    color: #008AC9;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.solicitud-container h3 {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.solicitud-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.solicitud-form .input-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0px;
+}
+
+.solicitud-form .input-group i {
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    min-width: 40px;
+    text-align: center;
+    border-radius: 5px 0 0 5px;
+    margin-bottom: 10px;
+}
+
+.solicitud-form input, 
+.solicitud-form textarea, 
+.solicitud-form select {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.solicitud-form textarea {
+    height: 100px;
+}
+
+.solicitud-form .solicitud-submit-btn {
+    background-color: #00304A;
+    color: white;
+    padding: 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.solicitud-form .solicitud-submit-btn:hover {
+    background-color: #008AC9;
+}
+
+.contact-info {
+    display: flex;
+    justify-content: space-around;
+    text-align: left;
+    margin-top: 20px;
+}
+
+.contact-info h4 {
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    color: #008AC9;
+}
+
+.contact-info p {
+    margin-bottom: 10px;
+    font-size: 1rem;
+    color: #34495e;
+}
+
+.scroll-to-top1 {
+    position: fixed;
+    bottom: 20px;  /* A 20px del fondo */
+    right: 20px;    /* A 20px del borde izquierdo */
+    background-color: #008AC9;; /* Color de fondo del botón */
+    color: white;  /* Color del texto */
+    border: none;
+    padding: 10px 20px;
+    border-radius: 100px;
+    cursor: pointer;
+    font-size: 16px;
+    z-index: 1000;  /* Para asegurarte de que quede por encima de otros elementos */
+}
+
+.scroll-to-top1:hover {
+    background-color: #00304A; /* Cambia el color cuando se pase el mouse */
+}
+
+
+.sidebar-item a{
+    text-decoration: none;
+   }
+
+
+.solicitud-submit-btn {
+    background-color: #00304A;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: 0.5s;
+}
+
+.solicitud-submit-btn:hover {
+    background-color: #008AC9;
+}
+
+.main-content a{
+    text-decoration: none;
+  } 
+
+body.swal2-shown, body.modal-open {
+    padding-right: 17px !important; /* Ajusta este valor para que coincida con el ancho del scrollbar */
+}
+
+
+#scrollToSolicitudes{
+    background-color: #008AC9;
+color: white;
+padding: 15px;
+border: none;
+border-radius: 5px;
+font-size: 1.2rem;
+cursor: pointer;
+transition: 0.3s;
+display:block;
+}
+
+    #scrollToSolicitudes:hover {
+background-color: #00304A;
+
+}
+
+
+/* Media query para pantallas más pequeñas */
+@media (max-width: 768px) {
+    .solicitud-container-wrapper {
+        flex-direction: column; /* Apila los elementos verticalmente */
+        gap: 20px; /* Espacio entre los elementos en vertical */
+        
+    }
+
+    .solicitud-instructions {
+        width: 100%; /* Ocupa el 100% del ancho disponible */
+    }
+
+    .solicitud-container {
+        width: 100%; /* Ocupa el 100% del ancho disponible */
+        padding: 20px; /* Reduce el padding en pantallas pequeñas */
+    }
+    .main .header-home {
+        display: none; /* Ocultar el encabezado en dispositivos móviles */
+    }
+    
+}
+
+
 

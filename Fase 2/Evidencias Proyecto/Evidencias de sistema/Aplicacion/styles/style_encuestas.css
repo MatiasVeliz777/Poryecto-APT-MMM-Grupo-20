@@ -181,3 +181,103 @@ color: #FFD700; /* Color amarillo para las estrellas llenas */
 .solicitud-submit-btn:hover {
     background-color: #008AC9;
 }
+
+.rating-stats {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.rating-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.rating-label {
+    width: 3%;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.rating-bar {
+    width: 40%;
+    background-color: #e0e0e0;
+    height: 10px;
+    border-radius: 5px;
+    position: relative;
+    margin: 0 10px;
+}
+
+.filled-bar {
+    background-color: #ffc107;
+    height: 100%;
+    border-radius: 5px;
+}
+
+.rating-percentage {
+    width: 5%;
+    text-align: right;
+    font-size: 14px;
+}
+
+.opciones-estadisticas {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.opcion-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.opcion-label {
+    width: 5%;
+    font-size: 16px;
+    margin-right: 20px;
+}
+
+.opcion-bar {
+    width: 40%;
+    background-color: #e0e0e0;
+    height: 12px;
+    border-radius: 5px;
+    position: relative;
+}
+
+.filled-bar-su {
+    background-color: #008AC9;
+    height: 100%;
+    border-radius: 5px;
+}
+
+.opcion-porcentaje {
+    width: 5%;
+    text-align: right;
+    font-size: 14px;
+    color: #555;
+    margin-left:10px;
+}
+
+
+
+/* Media query para pantallas más pequeñas */
+@media (max-width: 768px) {
+    .solicitud-container-wrapper {
+        flex-direction: column; /* Apila los elementos verticalmente */
+        gap: 20px; /* Espacio entre los elementos en vertical */
+    }
+
+    .solicitud-instructions {
+        width: 100%; /* Ocupa el 100% del ancho disponible */
+    }
+
+    .solicitud-container {
+        width: 100%; /* Ocupa el 100% del ancho disponible */
+        padding: 20px; /* Reduce el padding en pantallas pequeñas */
+    }
+    .main .header-home {
+        display: none; /* Ocultar el encabezado en dispositivos móviles */
+    }
+}
+

@@ -8,7 +8,7 @@ let date = new Date(),
 
 const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-const renderCalendar = (birthdays) => {
+const renderCalendar = (events) => {
     let firstDayofMonth = new Date(currYear, currMonth, 1).getDay(),
         lastDateofMonth = new Date(currYear, currMonth + 1, 0).getDate(),
         lastDayofMonth = new Date(currYear, currMonth, lastDateofMonth).getDay(),
@@ -31,10 +31,10 @@ const renderCalendar = (birthdays) => {
     for (let i = 1; i <= lastDateofMonth; i++) {
         // Verificar si es el día actual y estamos en el mes y año actual
         let isToday = i === todayDate && currMonth === todayMonth && currYear === todayYear ? "active" : "";
-        let isBirthday = birthdays.includes(i) ? "birthday" : ""; // Verificar si es cumpleaños
+        let isEvent = events.includes(i) ? "event-day" : ""; // Verificar si hay un evento
 
         // Aplicar ambas clases si corresponde
-        liTag += `<li class="${isToday} ${isBirthday}" data-day="${i}" onclick="scrollToBirthday(${i})">${i}</li>`;
+        liTag += `<li class="${isToday} ${isEvent}" data-day="${i}" onclick="scrollToEvent(${i})">${i}</li>`;
     }
 
     // Generar los días del próximo mes que ocupan espacio en la última fila del calendario
@@ -47,20 +47,15 @@ const renderCalendar = (birthdays) => {
     daysTag.innerHTML = liTag;
 };
 
-// Función para hacer scroll hasta la tarjeta de cumpleaños correspondiente
-function scrollToBirthday(day) {
-    // Asegurarse de que el día tenga siempre dos dígitos
+// Función para hacer scroll hasta la tarjeta de evento correspondiente
+function scrollToEvent(day) {
     const formattedDay = String(day).padStart(2, '0');
-
-    console.log("Intentando hacer scroll al día:", formattedDay);  // Log para depurar
-    const birthdayCard = document.querySelector(`#birthday-${formattedDay}`);
-    if (birthdayCard) {
-        birthdayCard.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        console.log("Scroll realizado a la tarjeta de cumpleaños.");
-    } else {
-        console.log("No se encontró una tarjeta de cumpleaños para el día:", formattedDay);
+    const eventCard = document.querySelector(`#event-${formattedDay}`);
+    if (eventCard) {
+        eventCard.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
 }
+
 
 // Llamada AJAX para obtener cumpleaños
 const fetchBirthdaysAndUpdateCards = (month, year) => {
