@@ -7,6 +7,12 @@ if (!isset($_SESSION['usuario'])) {
     exit();
 }
 
+// Verificar si el rol del usuario es distinto de 4
+if ($_SESSION['rol'] !== 4) {
+    header("Location: 403.php"); // Redirigir a la página de inicio si el rol no es 4
+    exit();
+}
+
 $error = "";
 include("conexion.php");
 
@@ -142,20 +148,51 @@ $sql_solicitudes = "SELECT
                         personal ON soportes.rut = personal.rut
                     JOIN 
                         roles ON soportes.rol_id = roles.id
-                    WHERE 1=1"; // Condición inicial que siempre es verdadera
+                    WHERE 
+                        1=1 
+                        ";
+
+$sql_soluc = "SELECT 
+                    soportes.id AS 'ID del Soporte',
+                    soportes.titulo AS 'Titulo del Soporte',
+                    soportes.contenido AS 'Contenido del Soporte',
+                    soportes.urgencia AS 'Urgencia del Soporte',
+                    soportes.imagen AS 'Imagen del Soporte',
+                    soportes.fecha_creacion AS 'Fecha de Creación',
+                    soportes.estado AS 'Estado del Soporte',
+                    personal.nombre AS 'Nombre del Usuario',
+                    personal.imagen AS 'Imagen del Usuario',
+                    roles.rol AS 'Nombre del Rol'
+                    FROM 
+                    soportes
+                    JOIN 
+                    personal ON soportes.rut = personal.rut
+                    JOIN 
+                    roles ON soportes.rol_id = roles.id
+
+                    WHERE 1=1 AND soportes.estado = 'Solucionado'
+
+                    ORDER BY soportes.fecha_creacion DESC";     
+
+                    
 
 // Filtrar por rol si está seleccionado
 if ($rol_id_seleccionado != 0) {
     $sql_solicitudes .= " AND soportes.rol_id = '$rol_id_seleccionado'";
+    $sql_soluc .= " AND soportes.rol_id = '$rol_id_seleccionado'";
 }
 
 // Filtrar por estado si está seleccionado
 if ($estado_seleccionado != '0') {
     $sql_solicitudes .= " AND soportes.estado = '$estado_seleccionado'";
+    $sql_soluc .= " AND soportes.rol_id = '$estado_seleccionado'";
 }
+
 
 // Ordenar los resultados
 $sql_solicitudes .= " ORDER BY soportes.fecha_creacion DESC";
+
+$result_soluc = $conn->query($sql_soluc);
 
 $result_solicitudes = $conn->query($sql_solicitudes);
 
@@ -180,6 +217,28 @@ if (file_exists($ruta_imagen_usuario)) {
     
 }
 
+// Total de solicitudes
+$total_solicitudes = $en_espera + $en_curso + $solucionado;
+
+// Consultar la cantidad de solicitudes por nivel de urgencia
+$sql_urgencia_count = "SELECT urgencia, COUNT(*) AS total FROM soportes GROUP BY urgencia";
+$result_urgencia_count = $conn->query($sql_urgencia_count);
+
+$urgencia_alta = 0;
+$urgencia_media = 0;
+$urgencia_baja = 0;
+
+while ($row = $result_urgencia_count->fetch_assoc()) {
+    if ($row['urgencia'] == 'alto') {
+        $urgencia_alta = $row['total'];
+    } elseif ($row['urgencia'] == 'medio') {
+        $urgencia_media = $row['total'];
+    } elseif ($row['urgencia'] == 'bajo') {
+        $urgencia_baja = $row['total'];
+    }
+}
+
+
 $conn->close();
 ?>
 
@@ -201,6 +260,10 @@ $conn->close();
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
     <link href="styles/style.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+
+
     <style>
         .table img {
             max-width: 80px;
@@ -362,7 +425,60 @@ $conn->close();
                 min-width: 150px;
             }
 
+            .filter-container {
+    display: flex;
+    justify-content: flex-start;
+    gap: 20px; /* Espacio entre los filtros */
+    margin-bottom: 20px; /* Espacio debajo del formulario */
+    justify-content: center;    
+}
 
+.filter-form {
+    display: flex;
+    gap: 20px; /* Espacio entre los filtros */
+    flex-wrap: wrap; /* Permite que los elementos se muevan a otra fila si el espacio es pequeño */
+    
+    margin: 0px;
+}
+
+.filter-item {
+    display: flex;
+    flex-direction: column; /* Coloca el label encima del select */
+    
+}
+
+.filter-item label {
+    margin-bottom: 5px; /* Espacio entre el label y el select */
+    font-weight: bold;
+}
+
+.form-select {
+    padding: 10px; /* Espacio interno más amplio */
+    font-size: 16px; /* Tamaño de fuente más grande */
+    width: 200px; /* Ancho del select */
+    border-radius: 5px; /* Bordes redondeados */
+}
+.statistics-container {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.statistics-container h4, .statistics-container h5 {
+    margin-top: 0;
+}
+
+.statistics-container ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.statistics-container li {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
 
     </style>
 </head>
@@ -383,25 +499,6 @@ $conn->close();
              <!-- Contenedor de la imagen de perfil -->
         <div class="profile-container text-center my-2">
         <img src="<?php 
-        // Ruta de la carpeta donde están las imágenes de perfil
-$carpeta_fotos = 'Images/fotos_personal/'; // Cambia esta ruta a la carpeta donde están tus fotos
-$imagen_default = 'Images/profile_photo/imagen_default.jpg'; // Ruta de la imagen predeterminada
-
-// Obtener el nombre del archivo de imagen desde la base de datos
-$nombre_imagen = $user_data['imagen']; // Se asume que este campo contiene solo el nombre del archivo
-
-// Construir la ruta completa de la imagen del usuario
-$ruta_imagen_usuario = $carpeta_fotos . $nombre_imagen;
-
-// Verificar si la imagen del usuario existe en la carpeta
-if (file_exists($ruta_imagen_usuario)) {
-    // Si la imagen existe, se usa esa ruta
-    $imagen_final = $ruta_imagen_usuario;
-} else {
-    // Si no existe, se usa la imagen predeterminada
-    $imagen_final = $imagen_default;
-    
-}
     // Verificar si la imagen del usuario existe en la carpeta
     if (file_exists($ruta_imagen_usuario)) {
         // Si la imagen existe, se usa esa ruta
@@ -432,7 +529,7 @@ if (file_exists($ruta_imagen_usuario)) {
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#multi" aria-expanded="false" aria-controls="multi">
-                        <i class="lni lni-layout"></i>
+                        <i class="lni lni-users"></i>
                         <span>Personal</span>
                     </a>
                     <ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
@@ -451,22 +548,19 @@ if (file_exists($ruta_imagen_usuario)) {
                             <a href="personal_nuevo.php" class="sidebar-link">Nuevos empleados</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Cumpleaños</a>
+                            <a href="cumpleaños.php" class="sidebar-link">Cumpleaños</a>
                         </li>
                     </ul>
                 </li>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#auth" aria-expanded="false" aria-controls="auth">
-                        <i class="lni lni-protection"></i>
+                        <i class="lni lni-calendar"></i>
                         <span>Eventos</span>
                     </a>
                     <ul id="auth" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
                         <li class="sidebar-item">
                             <a href="calendario.php" class="sidebar-link">Empresa</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="cumpleaños.php" class="sidebar-link">cumpleaños</a>
                         </li>
                     </ul>
                 </li>
@@ -476,27 +570,77 @@ if (file_exists($ruta_imagen_usuario)) {
                         <span>Capacitaciones</span>
                     </a>
                 </li>
-                
+
+                <?php if ($_SESSION['rol'] == 5): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#encuestas" aria-expanded="false" aria-controls="encuestas">
+                        <i class="lni lni-pencil"></i>
+                        <span>Encuestas</span>
+                    </a>
+                    <ul id="encuestas" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        
+                    <li class="sidebar-item">
+                            <a href="encuestas_prueba.php" class="sidebar-link">Crear encuesta</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="ver_enc_prueba.php" class="sidebar-link">Encuestas</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="respuestas.php" class="sidebar-link">Respuestas de encuestas</a>
+                        </li>
+                    </ul>
+                </li>
+                <?php else: ?>
+                    <li class="sidebar-item">
+                    <a href="ver_enc_prueba.php" class="sidebar-link">
+                    <i class="lni lni-pencil"></i>
+                    <span>Encuestas</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+            
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="lni lni-files"></i>
+                        <span>Documentos</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link">
-                    <i class="lni lni-layout"></i>
-                        <span>Documentacion</span>
+                    <i class="lni lni-comments"></i>
+                    <span>Foro</span>
                     </a>
                 </li>
+
+                <?php if ($_SESSION['rol'] == 4 || $_SESSION['rol'] == 5): ?>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#solicitudes" aria-expanded="false" aria-controls="solicitudes">
                         <i class="lni lni-popup"></i>
-                        <span>Foro</span>
+                        <span>Solicitudes</span>
                     </a>
+                    <ul id="solicitudes" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="solicitudes.php" class="sidebar-link">Solicitudes</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="solicitudes_usuarios.php" class="sidebar-link">Solicitudes de usuarios</a>
+                        </li>
+                    </ul>
                 </li>
-                
-                <li class="sidebar-item">
+                <?php else: ?>
+                    <li class="sidebar-item">
                     <a href="solicitudes.php" class="sidebar-link">
                         <i class="lni lni-popup"></i>
                         <span>Solicitudes</span>
                     </a>
                 </li>
+                <?php endif; ?>
+    
+
+
                 <?php if ($_SESSION['rol'] == 4): ?>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
@@ -549,9 +693,11 @@ if (file_exists($ruta_imagen_usuario)) {
         <div class="container-sop">
     <h1 class="text-center my-4">Ver Solicitudes de Soporte Informatico</h1>
     <div class="table-responsive">
-    <!-- Filtro de roles -->
-    <div class="filter-container">
-        <form method="GET" action="">
+
+   <!-- Filtros combinados en un solo formulario -->
+   <div class="filter-container">
+    <form method="GET" action="" class="filter-form">
+        <div class="filter-item">
             <label for="rol_id">Filtrar por Área:</label>
             <select name="rol_id" id="rol_id" class="form-select" onchange="this.form.submit()">
                 <option value="0">Todos las Área</option>
@@ -561,9 +707,8 @@ if (file_exists($ruta_imagen_usuario)) {
                     </option>
                 <?php } ?>
             </select>
-        </form>
-        <!-- Filtro de estados -->
-        <form method="GET" action="">
+        </div>
+        <div class="filter-item">
             <label for="estado">Filtrar por Estado:</label>
             <select name="estado" id="estado" class="form-select" onchange="this.form.submit()">
                 <option value="0">Todos los Estados</option>
@@ -571,14 +716,15 @@ if (file_exists($ruta_imagen_usuario)) {
                 <option value="En curso" <?php echo $estado_seleccionado == 'En curso' ? 'selected' : ''; ?>>En curso</option>
                 <option value="Solucionado" <?php echo $estado_seleccionado == 'Solucionado' ? 'selected' : ''; ?>>Solucionado</option>
             </select>
-        </form>
-    </div>
+        </div>
+    </form>
+</div>
 
 
     
     <!-- Tabla de solicitudes -->
     <div class="table-container">
-        <table class="table table-bordered table-hover">
+        <table id="tabla-soportes" class="table table-bordered table-hover">
             <thead>
                 <tr>
                     <th scope="col">Fecha</th>
@@ -592,29 +738,7 @@ if (file_exists($ruta_imagen_usuario)) {
             <tbody>
             <?php
                 include("conexion.php");
-
-                $sql = "SELECT 
-                            soportes.id AS 'ID del Soporte',
-                            soportes.titulo AS 'Titulo del Soporte',
-                            soportes.contenido AS 'Contenido del Soporte',
-                            soportes.urgencia AS 'Urgencia del Soporte',
-                            soportes.imagen AS 'Imagen del Soporte',
-                            soportes.fecha_creacion AS 'Fecha de Creación',
-                            soportes.estado AS 'Estado del Soporte',
-                            personal.nombre AS 'Nombre del Usuario',
-                            personal.imagen AS 'Imagen del Usuario',
-                            roles.rol AS 'Nombre del Rol'
-                        FROM 
-                            soportes
-                        JOIN 
-                            personal ON soportes.rut = personal.rut
-                        JOIN 
-                            roles ON soportes.rol_id = roles.id
-                        ORDER BY soportes.fecha_creacion DESC";     
-                
-                $result = $conn->query($sql);
-
-                
+     
                 if ($result_solicitudes->num_rows > 0) {
                     while($row = $result_solicitudes->fetch_assoc()) {
                         // Asignamos clases de color a la urgencia
@@ -664,8 +788,8 @@ if (file_exists($ruta_imagen_usuario)) {
                               data-usuario-imagen="' . $imagen_final_user . '" 
                               data-rol="' . $row['Nombre del Rol'] . '">';
 
-                        echo '<td>' . date('d/m/Y', strtotime($row['Fecha de Creación'])) . '</td>';
-                        echo '<td>';
+                            echo '<td>' . date('d/m/Y H:i', strtotime($row['Fecha de Creación'])) . '</td>';
+                            echo '<td>';
                             $titulo = $row['Titulo del Soporte'];
                             if (strlen($titulo) > 25) {
                                 echo substr($titulo, 0, 25) . '...';
@@ -695,12 +819,21 @@ if (file_exists($ruta_imagen_usuario)) {
                     echo '<tr><td colspan="10" class="text-center">No se encontraron solicitudes de soporte.</td></tr>';
                 }
 
-                $conn->close();
+                
                 ?>
-</tbody>
+                <tbody>   
+            </tbody>
         </table>
     </div>
-    </div>
+
+<script>
+    // Recargar la página cada 10 segundos (10000 milisegundos)
+    setInterval(function() {
+        location.reload();
+    }, 60000); // Cambia 10000 a otro valor en milisegundos si deseas un intervalo diferente
+</script>
+
+
 <!-- Modal de Bootstrap -->
 <div class="modal fade" id="solicitudModal" tabindex="-1" aria-labelledby="solicitudModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -726,7 +859,7 @@ if (file_exists($ruta_imagen_usuario)) {
         <label for="modal-estado-select" class="me-2">Estado:</label>
         <form method="POST" action="actualizar_estado.php" class="d-inline">
             <input type="hidden" name="soporte_id" id="modal-soporte-id" value="">
-            <select name="estado" class="form-select d-inline w-auto" id="modal-estado-select" onchange="this.form.submit()">
+            <select name="estado" class="form-select d-inline w-auto" id="modal-estado-select">
                 <option value="En espera">En espera</option>
                 <option value="En curso">En curso</option>
                 <option value="Solucionado">Solucionado</option>
@@ -734,6 +867,7 @@ if (file_exists($ruta_imagen_usuario)) {
         </form>
     </div>
 </div>
+
                 <!-- Sección del contenido -->
                 <div class="modal-section">
                     <h5>Contenido:</h5>
@@ -775,18 +909,45 @@ if (file_exists($ruta_imagen_usuario)) {
         </div>
     </div>
 </div>
+</div>
 
-<div class="estadisticas">
-<!-- Sección para el gráfico circular -->
-<div id="chartContainer" class="my-4">
+<div class="titulo-home" style="margin-top: 20px;">
+                <h4 style="font-size: 2rem; text-align: center;">Estadisticas Generales</h4>
+                <p style=" font-size: 1rem; margin-bottom: 0px;">Aqui pueden observar un poco las estadisticas generales de las solicitudes de soporte!</p>
+            </div>
+
+    <div class="estadisticas" style="display: flex; justify-content: center; gap: 20px; margin: 30px; max-width: 800px; margin-left: auto; margin-right: auto;">
+    <div class="statistics-container" style="flex: 1;">
+        <h4>Estadísticas Rápidas de Solicitudes</h4>
+        <ul>
+            <li>Total de solicitudes: <?php echo $total_solicitudes; ?></li>
+            <li>En espera: <?php echo $en_espera; ?></li>
+            <li>En curso: <?php echo $en_curso; ?></li>
+            <li>Solucionado: <?php echo $solucionado; ?></li>
+        </ul>
+        <h5>Solicitudes por Nivel de Urgencia</h5>
+        <ul>
+            <li>Alta: <?php echo $urgencia_alta; ?></li>
+            <li>Media: <?php echo $urgencia_media; ?></li>
+            <li>Baja: <?php echo $urgencia_baja; ?></li>
+        </ul>
+    </div>
+
+    <!-- Sección para el gráfico circular -->
+    <div id="chartContainer" class="my-4" style="flex: 1;">
         <canvas id="estadoSolicitudesChart"></canvas>
     </div>
 </div>
 
-</div>
+
+
+
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Incluir SweetAlert desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -802,7 +963,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const fecha = button.getAttribute('data-fecha');
         const rol = button.getAttribute('data-rol');
         const imagenUsuario = button.getAttribute('data-usuario-imagen');
-        const nombreUsuario = button.getAttribute('data-usuario');  // Agregamos la variable de nombre de usuario
+        const nombreUsuario = button.getAttribute('data-usuario');
         const imagenSoporte = button.getAttribute('data-imagen');
 
         // Actualizar el contenido del modal
@@ -814,17 +975,55 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('modal-rol').innerText = rol;
         document.getElementById('modal-imagen-usuario').src = imagenUsuario;
         document.getElementById('modal-imagen-soporte').src = imagenSoporte;
+        document.getElementById('modal-usuario').innerText = nombreUsuario;
 
-        // Actualizar el nombre del usuario
-        document.getElementById('modal-usuario').innerText = nombreUsuario;  // Aquí se actualiza el nombre del usuario
-
-        // Seleccionar el estado actual
+        // Seleccionar el estado actual y guardar el valor inicial
         const estadoSelect = document.getElementById('modal-estado-select');
         estadoSelect.value = estado;
-    });
-});
+        estadoSelect.dataset.previous = estado; // Guardar el estado inicial
 
+        // Remover cualquier evento de cambio previo
+        estadoSelect.removeEventListener('change', handleEstadoChange);
+
+        // Añadir evento de cambio al select para manejar la confirmación y envío
+        estadoSelect.addEventListener('change', handleEstadoChange);
+    });
+
+    function handleEstadoChange(event) {
+        const selectElement = event.target;
+        const previousValue = selectElement.dataset.previous || 'En espera';
+
+        // Detener el cambio automático de selección
+        event.preventDefault();
+
+        // Mostrar SweetAlert de confirmación
+        Swal.fire({
+            title: '¿Estás seguro?',
+            text: "Cambiar el estado de esta solicitud aplicará el cambio de manera permanente.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sí, continuar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Guardar el valor actual como el nuevo valor previo
+                selectElement.dataset.previous = selectElement.value;
+
+                // Enviar el formulario manualmente si el usuario confirma
+                selectElement.closest('form').submit();
+            } else {
+                // Si el usuario cancela, restablecer el valor anterior
+                selectElement.value = previousValue;
+            }
+        });
+    }
+});
 </script>
+
+
+
             
 <!-- Script para el gráfico circular de Chart.js -->
 <script>
@@ -856,12 +1055,41 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 </script>
+
 </div>
+<!-- Agrega este script en tu HTML, preferentemente al final del cuerpo (body) -->
+<footer class="footer">
+    <div class="footer-container">
+        <div class="footer-section">
+            <h4>Contáctanos</h4>
+            <p>Teléfono: +56 9 1234 5678</p>
+            <p>Email: contacto@clinicadesalud.cl</p>
+        </div>
+        <div class="footer-section">
+            <h4>Síguenos en Redes Sociales</h4>
+            <div class="social-icons">
+                <a href="https://www.facebook.com" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://www.twitter.com" target="_blank"><i class="fab fa-twitter"></i></a>
+                <a href="https://www.instagram.com" target="_blank"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.linkedin.com" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+        </div>
+        <div class="footer-section">
+            <h4>Dirección</h4>
+            <p>Avenida Siempre Viva 742</p>
+            <p>Santiago, Chile</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 Clínica de Salud. Todos los derechos reservados.</p>
+    </div>
+</footer>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
         crossorigin="anonymous"></script>
-    <script src="js/script.js"></script>
+
 </body>
+<script src="scripts/script.js"></script>
 
 </html>

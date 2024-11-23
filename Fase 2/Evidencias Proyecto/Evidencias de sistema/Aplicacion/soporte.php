@@ -79,6 +79,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
+// Ruta de la carpeta donde están las imágenes de perfil
+$carpeta_fotos = 'Images/fotos_personal/'; // Cambia esta ruta a la carpeta donde están tus fotos
+$imagen_default = 'Images/profile_photo/imagen_default.jpg'; // Ruta de la imagen predeterminada
+
+// Obtener el nombre del archivo de imagen desde la base de datos
+$nombre_imagen = $user_data['imagen']; // Se asume que este campo contiene solo el nombre del archivo
+
+// Construir la ruta completa de la imagen del usuario
+$ruta_imagen_usuario = $carpeta_fotos . $nombre_imagen;
+
+// Verificar si la imagen del usuario existe en la carpeta
+if (file_exists($ruta_imagen_usuario)) {
+    // Si la imagen existe, se usa esa ruta
+    $imagen_final = $ruta_imagen_usuario;
+} else {
+    // Si no existe, se usa la imagen predeterminada
+    $imagen_final = $imagen_default;
+}
+
 $conn->close();
 ?>
 
@@ -101,8 +120,11 @@ $conn->close();
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="styles/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+
     <style> a{text-decoration: none;}</style>
 </head>
 
@@ -121,25 +143,6 @@ $conn->close();
              <!-- Contenedor de la imagen de perfil -->
         <div class="profile-container text-center my-2">
         <img src="<?php 
-        // Ruta de la carpeta donde están las imágenes de perfil
-$carpeta_fotos = 'Images/fotos_personal/'; // Cambia esta ruta a la carpeta donde están tus fotos
-$imagen_default = 'Images/profile_photo/imagen_default.jpg'; // Ruta de la imagen predeterminada
-
-// Obtener el nombre del archivo de imagen desde la base de datos
-$nombre_imagen = $user_data['imagen']; // Se asume que este campo contiene solo el nombre del archivo
-
-// Construir la ruta completa de la imagen del usuario
-$ruta_imagen_usuario = $carpeta_fotos . $nombre_imagen;
-
-// Verificar si la imagen del usuario existe en la carpeta
-if (file_exists($ruta_imagen_usuario)) {
-    // Si la imagen existe, se usa esa ruta
-    $imagen_final = $ruta_imagen_usuario;
-} else {
-    // Si no existe, se usa la imagen predeterminada
-    $imagen_final = $imagen_default;
-    
-}
     // Verificar si la imagen del usuario existe en la carpeta
     if (file_exists($ruta_imagen_usuario)) {
         // Si la imagen existe, se usa esa ruta
@@ -170,7 +173,7 @@ if (file_exists($ruta_imagen_usuario)) {
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#multi" aria-expanded="false" aria-controls="multi">
-                        <i class="lni lni-layout"></i>
+                        <i class="lni lni-users"></i>
                         <span>Personal</span>
                     </a>
                     <ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
@@ -189,22 +192,19 @@ if (file_exists($ruta_imagen_usuario)) {
                             <a href="personal_nuevo.php" class="sidebar-link">Nuevos empleados</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Cumpleaños</a>
+                            <a href="cumpleaños.php" class="sidebar-link">Cumpleaños</a>
                         </li>
                     </ul>
                 </li>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#auth" aria-expanded="false" aria-controls="auth">
-                        <i class="lni lni-protection"></i>
+                        <i class="lni lni-calendar"></i>
                         <span>Eventos</span>
                     </a>
                     <ul id="auth" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
                         <li class="sidebar-item">
                             <a href="calendario.php" class="sidebar-link">Empresa</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="cumpleaños.php" class="sidebar-link">cumpleaños</a>
                         </li>
                     </ul>
                 </li>
@@ -214,27 +214,77 @@ if (file_exists($ruta_imagen_usuario)) {
                         <span>Capacitaciones</span>
                     </a>
                 </li>
-                
+
+                <?php if ($_SESSION['rol'] == 5): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#encuestas" aria-expanded="false" aria-controls="encuestas">
+                        <i class="lni lni-pencil"></i>
+                        <span>Encuestas</span>
+                    </a>
+                    <ul id="encuestas" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        
+                    <li class="sidebar-item">
+                            <a href="encuestas_prueba.php" class="sidebar-link">Crear encuesta</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="ver_enc_prueba.php" class="sidebar-link">Encuestas</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="respuestas.php" class="sidebar-link">Respuestas de encuestas</a>
+                        </li>
+                    </ul>
+                </li>
+                <?php else: ?>
+                    <li class="sidebar-item">
+                    <a href="ver_enc_prueba.php" class="sidebar-link">
+                    <i class="lni lni-pencil"></i>
+                    <span>Encuestas</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+            
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="lni lni-files"></i>
+                        <span>Documentos</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link">
-                    <i class="lni lni-layout"></i>
-                        <span>Documentacion</span>
+                    <i class="lni lni-comments"></i>
+                    <span>Foro</span>
                     </a>
                 </li>
+
+                <?php if ($_SESSION['rol'] == 4 || $_SESSION['rol'] == 5): ?>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#solicitudes" aria-expanded="false" aria-controls="solicitudes">
                         <i class="lni lni-popup"></i>
-                        <span>Foro</span>
+                        <span>Solicitudes</span>
                     </a>
+                    <ul id="solicitudes" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="solicitudes.php" class="sidebar-link">Solicitudes</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="solicitudes_usuarios.php" class="sidebar-link">Solicitudes de usuarios</a>
+                        </li>
+                    </ul>
                 </li>
-                
-                <li class="sidebar-item">
+                <?php else: ?>
+                    <li class="sidebar-item">
                     <a href="solicitudes.php" class="sidebar-link">
                         <i class="lni lni-popup"></i>
                         <span>Solicitudes</span>
                     </a>
                 </li>
+                <?php endif; ?>
+    
+
+
                 <?php if ($_SESSION['rol'] == 4): ?>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
@@ -281,7 +331,7 @@ if (file_exists($ruta_imagen_usuario)) {
                     <span><?php echo $usuario; ?></span>
                     <div class="Salir"><a href="cerrar_sesion.php"><i class="fas fa-sign-out-alt"></i> Salir </a></div>
                 </div>
-                </div>
+        </div>
         </div>
 
 
@@ -294,7 +344,7 @@ if (file_exists($ruta_imagen_usuario)) {
     <div class="solicitud-instructions">
         <h3>Instrucciones</h3>
         <p>1. Ingresa el título del problema que estás experimentando.</p>
-        <p>2. Describe el problema con la mayor cantidad de detalles posible.</p>
+        <p>2. Describe el problema con la mayor cantidad de detalles posible. <strong> Procura aclarar el Edificio y Piso en el cual se necesita el soporte.</strong></p>
         <p>4. Indica el nivel de urgencia.</p>
         <p>5. Puedes adjuntar una imagen o archivo relacionado con el problema si es necesario.</p>
     </div>
@@ -331,6 +381,7 @@ if (file_exists($ruta_imagen_usuario)) {
             <!-- Campo para subir imagen -->
             <div class="input-group">
                 <i class="fas fa-upload"></i>
+                <p style="margin-left: 10px;"> Imagen (opcional)</p>
                 <input type="file" name="imagen">
             </div>
 
@@ -394,10 +445,38 @@ if (file_exists($ruta_imagen_usuario)) {
     </script>
 
 </div></div>
+<!-- Agrega este script en tu HTML, preferentemente al final del cuerpo (body) -->
+<footer class="footer">
+    <div class="footer-container">
+        <div class="footer-section">
+            <h4>Contáctanos</h4>
+            <p>Teléfono: +56 9 1234 5678</p>
+            <p>Email: contacto@clinicadesalud.cl</p>
+        </div>
+        <div class="footer-section">
+            <h4>Síguenos en Redes Sociales</h4>
+            <div class="social-icons">
+                <a href="https://www.facebook.com" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://www.twitter.com" target="_blank"><i class="fab fa-twitter"></i></a>
+                <a href="https://www.instagram.com" target="_blank"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.linkedin.com" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+        </div>
+        <div class="footer-section">
+            <h4>Dirección</h4>
+            <p>Avenida Siempre Viva 742</p>
+            <p>Santiago, Chile</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 Clínica de Salud. Todos los derechos reservados.</p>
+    </div>
+</footer>
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
         crossorigin="anonymous"></script>
-<script src="js/script.js"></script>
+<script src="scripts/script.js"></script>
 </body>
 </html>
