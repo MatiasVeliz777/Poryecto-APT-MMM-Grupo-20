@@ -47,86 +47,94 @@ if ($result->num_rows > 0) {
 $mes = isset($_GET['mes']) ? $_GET['mes'] : date('m');
 $ano = isset($_GET['ano']) ? $_GET['ano'] : date('Y');
 
-// Procesar adición de un evento
-if (isset($_POST['agregar_evento'])) {
+// Procesar adición de una capacitación
+if (isset($_POST['agregar_capacitacion'])) {
     $titulo = $_POST['titulo'];
     $fecha = $_POST['fecha'];
     $hora = $_POST['hora'];
     $ubicacion = $_POST['ubicacion'];
 
-    $sql = "INSERT INTO eventos (titulo, fecha, hora, ubicacion) VALUES (?, ?, ?, ?)";
+    $sql = "INSERT INTO capacitaciones (titulo, fecha, hora, ubicacion) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        die("Error en la preparación de la consulta: " . $conn->error);
+    }
+
     $stmt->bind_param("ssss", $titulo, $fecha, $hora, $ubicacion);
 
     if ($stmt->execute()) {
-        $mensaje = "Evento agregado exitosamente.";
+        $mensaje = "Capacitación agregada exitosamente.";
         $tipo_mensaje = "success";
     } else {
-        $mensaje = "Error al agregar el evento: " . $conn->error;
+        $mensaje = "Error al agregar la capacitación: " . $conn->error;
         $tipo_mensaje = "danger";
+        echo $mensaje; // Mostrar el error en la salida
     }
+
     $stmt->close();
 }
 
-// Procesar eliminación de un evento
-if (isset($_GET['eliminar_evento'])) {
-    $id = intval($_GET['eliminar_evento']);
-    $stmt = $conn->prepare("DELETE FROM eventos WHERE id = ?");
+// Procesar eliminación de una capacitación
+if (isset($_GET['eliminar_capacitacion'])) {
+    $id = intval($_GET['eliminar_capacitacion']);
+    $stmt = $conn->prepare("DELETE FROM capacitaciones WHERE id = ?");
     $stmt->bind_param("i", $id);
 
     if ($stmt->execute()) {
-        $mensaje = "Evento eliminado exitosamente.";
+        $mensaje = "Capacitación eliminada exitosamente.";
         $tipo_mensaje = "success";
     } else {
-        $mensaje = "Error al eliminar el evento: " . $conn->error;
+        $mensaje = "Error al eliminar la capacitación: " . $conn->error;
         $tipo_mensaje = "danger";
     }
     $stmt->close();
 }
 
-// Procesar actualización de un evento
-if (isset($_POST['actualizar_evento'])) {
+// Procesar actualización de una capacitación
+if (isset($_POST['actualizar_capacitacion'])) {
     $id = intval($_POST['id']);
     $titulo = $_POST['titulo'];
     $fecha = $_POST['fecha'];
     $hora = $_POST['hora'];
     $ubicacion = $_POST['ubicacion'];
 
-    $stmt = $conn->prepare("UPDATE eventos SET titulo = ?, fecha = ?, hora = ?, ubicacion = ? WHERE id = ?");
+    $stmt = $conn->prepare("UPDATE capacitaciones SET titulo = ?, fecha = ?, hora = ?, ubicacion = ? WHERE id = ?");
     $stmt->bind_param("ssssi", $titulo, $fecha, $hora, $ubicacion, $id);
 
     if ($stmt->execute()) {
-        $mensaje = "Evento actualizado exitosamente.";
+        $mensaje = "Capacitación actualizada exitosamente.";
         $tipo_mensaje = "success";
     } else {
-        $mensaje = "Error al actualizar el evento: " . $conn->error;
+        $mensaje = "Error al actualizar la capacitación: " . $conn->error;
         $tipo_mensaje = "danger";
     }
     $stmt->close();
 }
 
+// Procesar registro de asistencia a una capacitación
 if (isset($_POST['registrar_asistencia'])) {
-    $evento_id = $_POST['evento_id'];
+    $capacitacion_id = $_POST['capacitacion_id'];
     $rut_usuario = $_SESSION['rut'];
 
-    // Verificar si el usuario ya se registró en este evento
-    $check_sql = "SELECT * FROM asistencias_eventos WHERE evento_id = ? AND rut_usuario = ?";
+    // Verificar si el usuario ya se registró en esta capacitación
+    $check_sql = "SELECT * FROM asistencia_capacitaciones WHERE capacitacion_id = ? AND rut_usuario = ?";
     $stmt_check = $conn->prepare($check_sql);
-    $stmt_check->bind_param("is", $evento_id, $rut_usuario);
+    $stmt_check->bind_param("is", $capacitacion_id, $rut_usuario);
     $stmt_check->execute();
     $result_check = $stmt_check->get_result();
 
     if ($result_check->num_rows > 0) {
-        $mensaje = "Ya estás registrado para este evento.";
+        $mensaje = "Ya estás registrado para esta capacitación.";
         $tipo_mensaje = "warning";
     } else {
         // Registrar asistencia
-        $sql = "INSERT INTO asistencias_eventos (evento_id, rut_usuario) VALUES (?, ?)";
+        $sql = "INSERT INTO asistencia_capacitaciones (capacitacion_id, rut_usuario) VALUES (?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("is", $evento_id, $rut_usuario);
+        $stmt->bind_param("is", $capacitacion_id, $rut_usuario);
 
         if ($stmt->execute()) {
-            $mensaje = "Te has registrado exitosamente para el evento.";
+            $mensaje = "Te has registrado exitosamente para la capacitación.";
             $tipo_mensaje = "success";
         } else {
             $mensaje = "Error al registrar la asistencia: " . $conn->error;
@@ -136,6 +144,7 @@ if (isset($_POST['registrar_asistencia'])) {
     }
     $stmt_check->close();
 }
+
 
 // Función para traducir los nombres de los días y meses al español
 function traducir_fecha($fecha){
@@ -199,16 +208,18 @@ if (file_exists($ruta_imagen_usuario)) {
     $imagen_final = $imagen_default;
 }
 
-
 ?>
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Próximos Eventos</title>
-    <link rel="stylesheet" href="styles/style_calendar.css">
+    <title>Document</title>
+    <link rel="stylesheet" href="styles/style_cums.css">
+    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="styles/style_calendar.css">   
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <!-- Bootstrap CSS (solo una referencia a la última versión) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
@@ -218,15 +229,104 @@ if (file_exists($ruta_imagen_usuario)) {
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles/style.css">
-    <link rel="stylesheet" href="styles/style_calendar.css">
-    
+ 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> 
+    <style>
+        .event-card {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-left: 4px solid #00304A; /* Color de borde izquierdo */
+            background-color: #c7eafa3a; /* Fondo más claro */
+            border-radius: 4px;
+            position: relative;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            transition: 0.1s;
+        }
 
+        .event-card:hover {
+            background-color: #CCE4F7; /* Fondo en hover */
+            transform: scale(1.02); /* Escala en hover */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra en hover */
+            cursor: pointer;
+        }
 
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        .event-header {
+            display: flex;
+            flex-direction: column; /* Alinea fecha y título en columna */
+            margin-bottom: 10px;
+        }
 
+        .event-date {
+            font-size: 1.25rem; /* Tamaño de fuente para la fecha */
+            font-weight: bold;
+            color: #00304A;
+        }
+
+        .event-title {
+            font-size: 1rem; /* Tamaño de fuente para el título */
+            margin-top: 5px; /* Espacio entre la fecha y el título */
+            color: #00304A;
+        }
+
+        .event-card p {
+            margin: 5px 0 0;
+            color: #333; /* Color de texto en detalles */
+        }
+
+        .event-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .events-list {
+            max-height: 500px; /* Altura máxima de la lista de eventos */
+            overflow-y: auto; /* Scroll vertical */
+            padding-right: 10px;
+            background-color: #fff;
+        }
+
+        .event-link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .event-link:hover {
+            background-color: #f8f9fa; /* Fondo en hover */
+        }
+
+        .alert {
+            max-width: 400px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .mensaje-popup {
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-outline-danger, .btn-outline-dark {
+            margin-left: 5px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .event-list-box{
+        justify-content: center; align-items: center; width:450px;
+        }
+        @media (max-width: 768px) {
+        .event-list-box{
+            width: 200px;
+        }}
+
+    </style>
 </head>
 <body>
 <div class="main-content">
@@ -435,265 +535,125 @@ if (file_exists($ruta_imagen_usuario)) {
         </div>
         <!-- Aqui termina el menu -->
 
-        <!-- Aqui Empieza el calendario -->
-    <div class="mensaje-popup">
-        
-        <div class="titulo-eventos">
-        <h2>Calendario de Eventos</h2>
+<div class="titulo-home">
+    <h2 style="width: 100%; text-align: center; margin-top: 20px;">Calendario de Capacitaciones</h2>
+    <p>Consulta todos los eventos programados en la clínica, busca por mes y navega por los días para ver los eventos programados.</p>
+</div>
+
+<div class="main-container-cump">
+    <div class="wrapper-cum">
+        <!-- Contenedor del calendario -->
+        <div class="calendar-box">
+            <header>
+                <p class="current-date"></p>
+                <div class="icons">
+                    <span id="prev" class="material-symbols-rounded"><</span>
+                    <span id="next" class="material-symbols-rounded">></span>
+                </div>
+            </header>
+            <div class="calendar-cum">
+                <ul class="weeks">
+                    <li>Dom</li>
+                    <li>Lun</li>
+                    <li>Mar</li>
+                    <li>Mié</li>
+                    <li>Jue</li>
+                    <li>Vie</li>
+                    <li>Sáb</li>
+                </ul>
+                <ul class="days"></ul> <!-- Aquí se rellenarán los días del mes -->
+            </div>
+            <?php if ($rol == 5): ?>
+                <!-- Botón para abrir el modal de agregar evento -->
+                <button type="button" class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addEventModal">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="currentColor" class="bi bi-plus-circle mr-1" viewBox="0 0 16 16">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                    </svg>
+                    Agregar Capacitacion
+                </button>
+            <?php endif; ?>
         </div>
     </div>
-    
-    <div class="container">
-        <div class="calendar">
-            <div class="titulo-calendar">
-                <h2>Calendario de Eventos</h2>
-            </div>
-            <!-- Botones para cambiar de mes -->
-            <div class="d-flex justify-content-between">
-                <a class="btn btn-outline-secondary"  href="?mes=<?php echo ($mes == 1) ? 12 : $mes - 1; ?>&ano=<?php echo ($mes == 1) ? $ano - 1 : $ano; ?>">Anterior</a>
-                <?php
-                    // Obtener el nombre del mes en inglés
-                    $mes_en_ingles = strftime('%B', mktime(0, 0, 0, $mes, 10));
 
-                    // Traducir el mes al español usando la función traducir_mes
-                    $mes_traducido = traducir_mes_mes($mes_en_ingles);
-
-                    // Mostrar el mes traducido y el año
-                    echo "<h3>" . $mes_traducido . " " . $ano . "</h3>";
-                    ?>
-                <a class="btn btn-outline-secondary" href="?mes=<?php echo ($mes == 12) ? 1 : $mes + 1; ?>&ano=<?php echo ($mes == 12) ? $ano + 1 : $ano; ?>">Siguiente</a>
-            </div>
-
-            <table class="table table-bordered">
-                <div class="table-responsive">
-                <thead>
-                    <tr>
-                        <th>Lun</th>
-                        <th>Mar</th>
-                        <th>Mié</th>
-                        <th>Jue</th>
-                        <th>Vie</th>
-                        <th>Sáb</th>
-                        <th>Dom</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php
-                    // Obtener eventos del mes actual
-                    $stmt = $conn->prepare("SELECT * FROM eventos WHERE MONTH(fecha) = ? AND YEAR(fecha) = ? ORDER BY fecha ASC");
-                    $stmt->bind_param("ii", $mes, $ano);
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    
-                    $eventos = [];
-                    while ($row = $result->fetch_assoc()) {
-                        $dia = date('j', strtotime($row['fecha']));
-                        $eventos[$dia][] = $row;
-                    }
-
-                    $stmt->close();
-
-                    // Mostrar calendario (asumimos que empieza un lunes)
-                    $primerDiaDelMes = date('N', strtotime("$ano-$mes-01"));
-                    $diasEnMes = date('t', strtotime("$ano-$mes-01"));
-
-                    echo "<tr>";
-                    for ($i = 1; $i < $primerDiaDelMes; $i++) {
-                        echo "<td></td>"; // Días en blanco hasta el primer día del mes
-                    }
-
-                    for ($dia = 1; $dia <= $diasEnMes; $dia++) {
-                        if (($dia + $primerDiaDelMes - 2) % 7 == 0 && $dia != 1) {
-                            echo "</tr><tr>"; // Inicia una nueva fila cada semana
-                        }
- 
-                        
-                        $class = isset($eventos[$dia]) ? "event-day" : "";
-                        echo "<td class='$class'>$dia</td>";
-                    }
-
-                    echo "</tr>";
-                    ?>
-                </tbody>
-            </table>
-            
-            <!-- Botón para abrir el modal -->
-            <?php if ($rol == 5) {
-        echo "<button type=\"button\" class=\"btn btn-outline-primary mt-2\" data-bs-toggle=\"modal\" data-bs-target=\"#addEventModal\">
-        <svg xmlns=\"http://www.w3.org/2000/svg\" width=\"25\" height=\"25\" fill=\"currentColor\" class=\"bi bi-plus-circle mr-1\" viewBox=\"0 0 16 16\">
-            <path d=\"M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16\"/>
-            <path d=\"M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4\"/>
-        </svg>
-        Agregar Evento
-      </button>";
-;
-}
-
-?>
-        </div>
+    <!-- Contenedor de los eventos del día seleccionado -->
+    <div class="event-list-box" >
+        <h4>Capacitaciones del Mes</h4>
+        <div id="event-list"></div> <!-- Aquí se cargarán los eventos dinámicamente -->
         
-
-        <div class="events-list">
-    <h2>Próximos Eventos</h2>
-    <?php
-    foreach ($eventos as $dia => $eventos_dia) {
-        foreach ($eventos_dia as $evento) {
-            // Contenedor general del evento con clase clickeable
-            echo "<div class='event-item clickeable' onclick=\"location.href='evento_asistencia.php?evento_id=" . $evento['id'] . "'\" style='cursor: pointer;'>";
-
-            echo "<div class='event-header'>";
-            echo "<div class='event-date'>" . $fecha_traducida = traducir_fecha($evento['fecha']) . "</div>";
-            // Limitar el título a 40 caracteres
-            $titulo = (strlen($evento['titulo']) > 30) ? substr($evento['titulo'], 0, 25) . '...' : $evento['titulo'];
-
-            // Limitar la ubicación a 40 caracteres
-            $ubicacion = (strlen($evento['ubicacion']) > 30) ? substr($evento['ubicacion'], 0, 37) . '...' : $evento['ubicacion'];
-
-            // Mostrar el contenido con el límite aplicado
-            echo "<div class='event-title'><h4>" . $titulo . "</h4></div>";
-            echo "</div>"; // end event-header
-
-            echo "<p>Hora: " . date('h:i A', strtotime($evento['hora'])) . "</p>";
-            echo "<p>Ubicación: " . $ubicacion . "</p>";
-            // Div para botones de acciones (modificar/eliminar) solo si tiene permisos
-            echo "<div class='event-actions'>";
-
-            if ($_SESSION['cargo_id'] == 26) {
-                // Botón para eliminar el evento con confirmación y stopPropagation
-                echo "<button class='btn btn-outline-danger btn-sm' onclick=\"event.stopPropagation(); confirmarEliminacion('" . $evento['id'] . "')\">
-                    <svg xmlns='http://www.w3.org/2000/svg' width='17' height='20' fill='currentColor' class='bi bi-dash-circle' viewBox='0 0 16 16'>
-                        <path d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16'/>
-                        <path d='M4 8a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7A.5.5 0 0 1 4 8'/>
-                    </svg>
-                    </button>";
-
-                // Botón para modificar el evento (abrir modal) con stopPropagation()
-                echo "<button class='btn btn-outline-dark btn-sm' data-bs-toggle='modal' data-bs-target='#updateEventModal" . $evento['id'] . "' onclick='event.stopPropagation();'>
-                    <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' class='bi bi-arrow-clockwise' viewBox='0 0 16 16'>
-                        <path fill-rule='evenodd' d='M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z'/>
-                        <path d='M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466'/>
-                    </svg>
-                    </button>";
-            }
-
-            // Mostrar botón para registrar asistencia
-            // Obtener la fecha actual
-            $fecha_actual = date("Y-m-d");
-
-            // Consulta para verificar si el usuario ya está registrado y obtener la fecha del evento
-            $evento_id = $evento['id'];
-            $rut_usuario = $_SESSION['rut'];
-
-            $check_sql = "SELECT fecha FROM eventos WHERE id = ? AND fecha >= ?";
-            $stmt_check = $conn->prepare($check_sql);
-            $stmt_check->bind_param("is", $evento_id, $fecha_actual);
-            $stmt_check->execute();
-            $result_check = $stmt_check->get_result();
-
-            if ($result_check->num_rows > 0) {
-                // Verificar si el usuario ya está registrado en este evento
-                $check_asistencia_sql = "SELECT * FROM asistencias_eventos WHERE evento_id = ? AND rut_usuario = ?";
-                $stmt_check_asistencia = $conn->prepare($check_asistencia_sql);
-                $stmt_check_asistencia->bind_param("is", $evento_id, $rut_usuario);
-                $stmt_check_asistencia->execute();
-                $result_check_asistencia = $stmt_check_asistencia->get_result();
-
-                if ($result_check_asistencia->num_rows == 0) {
-                    // Si el usuario no está registrado y el evento es futuro, muestra el botón "Asistir"
-                    echo "<form method='POST'>";
-                    echo "<input type='hidden' name='evento_id' value='" . $evento['id'] . "'>";
-                    echo "<button type='submit' name='registrar_asistencia' class='btn btn-outline-primary btn-sm' onclick='event.stopPropagation();'>Asistir</button>";
-                    echo "</form>";
-                }
-
-                $stmt_check_asistencia->close();
-            }
-
-            $stmt_check->close();
-            
-            echo "</div>"; // end event-actions
-
-            echo "</div>"; // end event-item
-        }
-    }
-    ?>
+    </div>
+    
 </div>
+
+
 
 <!-- Modal para agregar evento -->
 <div class="modal fade" id="addEventModal" tabindex="-1" aria-labelledby="addEventModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-md modal-dialog-centered"> <!-- modal-md para tamaño mediano -->
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Agregar Evento</h5>
+                <h5 class="modal-title" id="addEventModalLabel">Agregar Capacitacion</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
                 <form method="POST">
-                    <div class="form-group">
+                    <!-- Título del Evento -->
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Título del Evento" required>
                         <label for="titulo">Título del Evento</label>
-                        <input type="text" class="form-control" id="titulo" name="titulo" required>
                     </div>
-                    <div class="form-group">
+
+                    <!-- Fecha del Evento usando Flatpickr -->
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control flatpickr-date" id="fecha" name="fecha" placeholder="Fecha" required>
                         <label for="fecha">Fecha</label>
-                        <input type="date" class="form-control" id="fecha" name="fecha" required>
                     </div>
-                    <div class="form-group">
+
+                    <!-- Hora del Evento usando Flatpickr -->
+                    <div class="form-floating mb-3">
+                        <input type="time" class="form-control" id="hora" name="hora" placeholder="Hora" required>
                         <label for="hora">Hora</label>
-                        <input type="time" class="form-control" id="hora" name="hora" required>
                     </div>
-                    <div class="form-group">
+
+                    <!-- Ubicación del Evento -->
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="ubicacion" name="ubicacion" placeholder="Ubicación" required>
                         <label for="ubicacion">Ubicación</label>
-                        <input type="text" class="form-control" id="ubicacion" name="ubicacion" required>
                     </div>
-                    <button type="submit" name="agregar_evento" class="btn btn-primary">Guardar Evento</button>
+
+                    <!-- Botón Guardar Evento -->
+                    <div class="d-grid">
+                        <button type="submit" name="agregar_capacitacion" class="btn btn-primary">Guardar Evento</button>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modales fuera del contenedor de eventos -->
-<?php
-foreach ($eventos as $dia => $eventos_dia) {
-    foreach ($eventos_dia as $evento) {
-        // Modal para actualizar el evento, ahora fuera del contenedor clickeable
-        echo "<div class='modal fade' id='updateEventModal" . $evento['id'] . "' tabindex='-1' aria-labelledby='updateEventModalLabel' aria-hidden='true'>
-            <div class='modal-dialog'>
-                <div class='modal-content'>
-                    <div class='modal-header'>
-                        <h5 class='modal-title'>Actualizar Evento</h5>
-                        <button type='button' class='btn-close' data-bs-dismiss='modal' aria-label='Cerrar'></button>
-                    </div>
-                    <div class='modal-body'>
-                        <form method='POST'>
-                            <input type='hidden' name='id' value='" . $evento['id'] . "'>
-                            <div class='form-group'>
-                                <label for='titulo'>Título del Evento</label>
-                                <input type='text' class='form-control' id='titulo' name='titulo' value='" . $evento['titulo'] . "' required>
-                            </div>
-                            <div class='form-group'>
-                                <label for='fecha'>Fecha</label>
-                                <input type='date' class='form-control' id='fecha' name='fecha' value='" . $evento['fecha'] . "' required>
-                            </div>
-                            <div class='form-group'>
-                                <label for='hora'>Hora</label>
-                                <input type='time' class='form-control' id='hora' name='hora' value='" . $evento['hora'] . "' required>
-                            </div>
-                            <div class='form-group'>
-                                <label for='ubicacion'>Ubicación</label>
-                                <input type='text' class='form-control' id='ubicacion' name='ubicacion' value='" . $evento['ubicacion'] . "' required>
-                            </div>
-                            <button type='submit' name='actualizar_evento' class='btn btn-success'>Actualizar Evento</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>";
-    }
-}
-?>
+<!-- Incluir Flatpickr -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<!-- Script para SweetAlert2 -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Inicializar Flatpickr para el campo de fecha
+        flatpickr("#fecha", {
+            dateFormat: "Y-m-d", // Formato compatible con MySQL
+            minDate: "today", // No permitir fechas pasadas
+            locale: "es" // Cambiar al español (asegúrate de incluir la configuración de idioma si es necesario)
+        });
+
+        // Inicializar Flatpickr para el campo de hora
+        flatpickr("#hora", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i", // Formato compatible con MySQL para la hora
+            time_24hr: true // Formato de 24 horas
+        });
+    });
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- Mostrar alertas de acuerdo a la acción realizada -->
@@ -745,16 +705,47 @@ function confirmarEliminacion(idEvento) {
 }
 </script>
 
+<script src="scripts/script.js"></script>
+    <!-- Agrega este script en tu HTML, preferentemente al final del cuerpo (body) -->
+    <footer class="footer">
+    <div class="footer-container">
+        <div class="footer-section">
+            <h4>Contáctanos</h4>
+            <p>Teléfono: +56 9 1234 5678</p>
+            <p>Email: contacto@clinicadesalud.cl</p>
+        </div>
+        <div class="footer-section">
+            <h4>Síguenos en Redes Sociales</h4>
+            <div class="social-icons">
+                <a href="https://www.facebook.com" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://www.twitter.com" target="_blank"><i class="fab fa-twitter"></i></a>
+                <a href="https://www.instagram.com" target="_blank"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.linkedin.com" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+        </div>
+        <div class="footer-section">
+            <h4>Dirección</h4>
+            <p>Avenida Siempre Viva 742</p>
+            <p>Santiago, Chile</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 Clínica de Salud. Todos los derechos reservados.</p>
+    </div>
+</footer>
 
 
-</div>
 
-
-    <?php $conn->close(); ?>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+<!-- Bootstrap Bundle with Popper (necesario para los modales de Bootstrap) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
         crossorigin="anonymous"></script>
-    <script src="script.js"></script>
+        <!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Flatpickr JavaScript -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script src="scripts/script_capacitaciones.js"></script>
+
 </body>
 </html>
