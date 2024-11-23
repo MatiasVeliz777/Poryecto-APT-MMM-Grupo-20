@@ -129,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $id_categoria = (int) $_POST['categoria']; // Convertir a int
         $id_sub_servicio = (int) $_POST['sub_servicio']; // Convertir a int
         $comentarios = $_POST['comentarios'];
+        date_default_timezone_set('America/Santiago'); // Establecer zona horaria de Chile
         $fecha_hora = date('Y-m-d H:i:s'); // Obtener la fecha y hora actual
         $rut_usuario = $_SESSION['rut']; // Obtener el RUT desde la sesión
         $rol = $_SESSION['rol']; // Obtener el rol desde la sesión
@@ -185,16 +186,15 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solicitud</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" href="Images/icono2.png" type="image/x-icon">
     <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
     <link rel="stylesheet" href="styles/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     <link rel="stylesheet" href="styles/style_cards.css">
     <link rel="stylesheet" href="styles/style_new_cards.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUa3YufH2ZZcGx3G6tzhhx8Y3v2aD8YCGbglbvvKvzLn5JpkOJf3X1L5jQ5r" crossorigin="anonymous">
+
     <style>
         .card-body {
             flex-grow: 1;
@@ -243,11 +243,60 @@ $conn->close();
         overflow-y: auto;  /* Agregar scroll si excede la altura */
         word-wrap: break-word; /* Dividir palabras largas */
     }
+    /* Style tab links */
+.tablink {
+  background-color: #00304A;
+  color: white;
+  float: left;
+  border: none; 
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  font-size: 17px;
+  width: 25%;
+  transition: 0.5s;
+  margin-right: 10px; border-radius: 5px;
+}
+
+.tablink:hover {
+  background-color: #25abf3;
+  color: white;
+}
+/* Style the buttons inside the tab */
+.tablink button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+  font-size: 17px;
+  
+}
+
+.wrapper a{
+    text-decoration: none;
+}
+
+body a:hover{
+    color: #FFFF;
+    text-decoration: none;
+}
+#modalArchivo {
+    color: #007bff;
+}
+
+#modalArchivo:hover {
+    color: #0056b3;
+    background-color: transparent;
+    text-decoration: underline;
+}
 </style>
 </head>
 <body>
 <div class="main-content">
-    <div class="wrapper">
+<div class="wrapper">
         <aside id="sidebar">
             <div class="d-flex">
                 <button class="toggle-btn" type="button">
@@ -290,33 +339,38 @@ $conn->close();
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#multi" aria-expanded="false" aria-controls="multi">
-                        <i class="lni lni-layout"></i>
+                        <i class="lni lni-users"></i>
                         <span>Personal</span>
                     </a>
                     <ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                    <?php if ($_SESSION['rol'] == 5): ?>
                     <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Empleado del mes</a>
+                            <a href="agregar_personal.php" class="sidebar-link">Agregar Empleado</a>
+                        </li>
+                    <li class="sidebar-item">
+                            <a href="empleado_mes.php" class="sidebar-link">Agregar Empleado del Mes</a>
+                        </li>
+                        <?php endif; ?>
+                    <li class="sidebar-item">
+                            <a href="empleados_meses.php" class="sidebar-link">Empleado del mes</a>
                         </li>
                         <li class="sidebar-item">
                             <a href="personal_nuevo.php" class="sidebar-link">Nuevos empleados</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Cumpleaños</a>
+                            <a href="cumpleaños.php" class="sidebar-link">Cumpleaños</a>
                         </li>
                     </ul>
                 </li>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#auth" aria-expanded="false" aria-controls="auth">
-                        <i class="lni lni-protection"></i>
+                        <i class="lni lni-calendar"></i>
                         <span>Eventos</span>
                     </a>
                     <ul id="auth" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
                         <li class="sidebar-item">
                             <a href="calendario.php" class="sidebar-link">Empresa</a>
-                        </li>
-                        <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">cumpleaños</a>
                         </li>
                     </ul>
                 </li>
@@ -326,33 +380,102 @@ $conn->close();
                         <span>Capacitaciones</span>
                     </a>
                 </li>
-                
+
+                <?php if ($_SESSION['rol'] == 5): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#encuestas" aria-expanded="false" aria-controls="encuestas">
+                        <i class="lni lni-pencil"></i>
+                        <span>Encuestas</span>
+                    </a>
+                    <ul id="encuestas" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        
+                    <li class="sidebar-item">
+                            <a href="encuestas_prueba.php" class="sidebar-link">Crear encuesta</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="ver_enc_prueba.php" class="sidebar-link">Encuestas</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="respuestas.php" class="sidebar-link">Respuestas de encuestas</a>
+                        </li>
+                    </ul>
+                </li>
+                <?php else: ?>
+                    <li class="sidebar-item">
+                    <a href="ver_enc_prueba.php" class="sidebar-link">
+                    <i class="lni lni-pencil"></i>
+                    <span>Encuestas</span>
+                    </a>
+                </li>
+                <?php endif; ?>
+            
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link">
+                        <i class="lni lni-files"></i>
+                        <span>Documentos</span>
+                    </a>
+                </li>
 
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link">
-                    <i class="lni lni-layout"></i>
-                        <span>Documentacion</span>
+                    <i class="lni lni-comments"></i>
+                    <span>Foro</span>
                     </a>
                 </li>
+
+                <?php if ($_SESSION['rol'] == 4 || $_SESSION['rol'] == 5): ?>
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#solicitudes" aria-expanded="false" aria-controls="solicitudes">
                         <i class="lni lni-popup"></i>
-                        <span>Foro</span>
+                        <span>Solicitudes</span>
                     </a>
+                    <ul id="solicitudes" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="solicitudes.php" class="sidebar-link">Solicitudes</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="solicitudes_usuarios.php" class="sidebar-link">Solicitudes de usuarios</a>
+                        </li>
+                    </ul>
                 </li>
-                
-                <li class="sidebar-item">
-                    <a href="solicitud.php" class="sidebar-link">
+                <?php else: ?>
+                    <li class="sidebar-item">
+                    <a href="solicitudes.php" class="sidebar-link">
                         <i class="lni lni-popup"></i>
                         <span>Solicitudes</span>
                     </a>
                 </li>
+                <?php endif; ?>
+    
+
+
+                <?php if ($_SESSION['rol'] == 4): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#soporte" aria-expanded="false" aria-controls="soporte">
+                        <i class="lni lni-protection"></i>
+                        <span>Soporte Técnico</span>
+                    </a>
+                    <ul id="soporte" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="soporte.php" class="sidebar-link">Soporte Técnico</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="soporte_def.php" class="sidebar-link">Ver Solicitudes</a>
+                        </li>
+                    </ul>
+                </li>
+            <?php else: ?>
                 <li class="sidebar-item">
                     <a href="soporte.php" class="sidebar-link">
                         <i class="lni lni-cog"></i>
-                        <span>Soporte Informatico</span>
+                        <span>Soporte Informático</span>
                     </a>
                 </li>
+            <?php endif; ?>
+
             </ul>
             <div class="sidebar-footer">
                 <a href="#" class="sidebar-link">
@@ -363,6 +486,7 @@ $conn->close();
         </aside>
 
         <div class="main" style="padding-top: 15px;">
+        <div class="header-home">
             <div class="header">
                 <div class="ficha">Ficha:‎ ‎ ‎ <?php echo $usuario; ?></div>
                 <div class="user-nom">
@@ -373,7 +497,7 @@ $conn->close();
                     <span><?php echo $usuario; ?></span>
                     <div class="Salir"><a href="cerrar_sesion.php"><i class="fas fa-sign-out-alt"></i> Salir </a></div>
                 </div>
-                
+                </div>
         </div>
 
         <header class="solicitud-header">
@@ -442,66 +566,139 @@ $conn->close();
     </div>
 </div>
 
-<div class="solicitud-container-wrapper" style="margin-bottom: 50px; width: 100%;">
 
-    <div class="solicitud-container" style="width: 930px;">
+<div class="solicitud-container-wrapper" style="width: 980px; margin-bottom: 30px;">
+ <!-- Tab links -->
+    <div class="solicitud-container" style="width: 930px; justify-content: center; background-color: #3f8bb100; box-shadow: 0.
+    ">
+        <h2>Elige la opcion que deseas ver</h2>
+        <h6 style="text-align: center; margin-bottom: 30px;">Aquí puedes tanto las solicitudes como las respuestas a tus solicitudes enviadas. Solo escoge el que quieras ver y listo!</h6>
+        <div style="display: flex; justify-content: center;">
+            <button class="tablink" onclick="openPage('Solicitudes')" id="defaultOpen">Solicitudes</button>
+            <button class="tablink" onclick="openPage('Respuestas')">Respuestas</button>
+            <!-- Tab content -->
+        </div>
+    </div>
+</div>
+
+ <div id="Solicitudes" class="tabcontent">
+    <div class="solicitud-container-wrapper">
+      <div class="solicitud-container" style="width: 930px;">
         <h2>Tus solicitudes</h2>
-        <h6 style="text-align: center; margin-bottom: 30px;">Estas son tus solicitudes que has enviado, aqui puedes abrirlas y ver su contenido extensos, ademas de poder eliminarla si gustas.</h6>
+        <h6 style="text-align: center; margin-bottom: 30px;">
+          Estas son tus solicitudes que has enviado, aquí puedes abrirlas y ver su contenido extenso, además de poder eliminarla si gustas.
+        </h6>
 
         <?php
         include("conexion.php");
-        // Obtener el RUT del usuario autenticado desde la sesión
         $rut_usuario = $_SESSION['rut'];
 
-        // Consulta para obtener las solicitudes del usuario
-        $sql_solis_ver = "SELECT s.id, s.rut, a.nombre_area, c.nombre_categoria, ss.nombre_sub_servicio, s.comentarios, s.fecha_hora 
-                        FROM solicitudes s
-                        INNER JOIN soli_areas a ON s.id_area = a.id
-                        INNER JOIN soli_categorias c ON s.id_categoria = c.id
-                        INNER JOIN soli_servicios ss ON s.id_sub_servicio = ss.id
-                        WHERE s.rut = '$rut_usuario'";
+        $sql_solis_ver = "
+            SELECT s.id, s.rut, a.nombre_area, c.nombre_categoria, ss.nombre_sub_servicio, s.comentarios, s.fecha_hora 
+            FROM solicitudes s
+            INNER JOIN soli_areas a ON s.id_area = a.id
+            INNER JOIN soli_categorias c ON s.id_categoria = c.id
+            INNER JOIN soli_servicios ss ON s.id_sub_servicio = ss.id
+            LEFT JOIN soli_respuestas r ON s.id = r.solicitud_id
+            WHERE s.rut = '$rut_usuario' AND r.id IS NULL";
 
-        // Ejecutar la consulta
         $result_solis = $conn->query($sql_solis_ver);
 
-        if ($result_solis === false) {
-            echo "<p class='text-center'>No has enviado ninguna solicitud.</p>";
+        if ($result_solis === false || $result_solis->num_rows == 0) {
+            echo "<p class='text-center'>No has enviado ninguna solicitud sin respuesta.</p>";
         } else {
         ?>
-
             <div class="row">
-                <?php if ($result_solis->num_rows > 0): ?>
-                    <?php while ($row = $result_solis->fetch_assoc()): ?>
-                        <div class="col-md-4 mb-4">
-                            <div class="card shadow-sm" data-id="<?php echo $row['id']; ?>" data-toggle="modal" data-target="#solicitudModal" onclick="loadSolicitudModal(<?php echo $row['id']; ?>)">
-                                <div class="card-body">
-                                    <h5 class="card-title">Solicitud</h5>
-                                    <p><strong>Área:</strong> <?php echo $row['nombre_area']; ?></p>
-                                    <p><strong>Categoría:</strong> <?php echo $row['nombre_categoria']; ?></p>
-                                    <p><strong>Sub-servicio:</strong> <?php echo $row['nombre_sub_servicio']; ?></p>
-                                    <p><strong>Comentarios:</strong> <?php echo htmlspecialchars($row['comentarios']); ?></p>
-                                    <p><strong>Fecha:</strong> <?php echo date('d-m-Y H:i', strtotime($row['fecha_hora'])); ?></p>
-                                </div>
+                <?php while ($row = $result_solis->fetch_assoc()): ?>
+                    <div class="col-md-4 mb-4">
+                        <div class="card shadow-sm" data-id="<?php echo $row['id']; ?>" data-toggle="modal" data-target="#solicitudModal" onclick="loadSolicitudModal(<?php echo $row['id']; ?>)">
+                            <div class="card-body">
+                                <h5 class="card-title">Solicitud</h5>
+                                <p><strong>Área:</strong> <?php echo $row['nombre_area']; ?></p>
+                                <p><strong>Categoría:</strong> <?php echo $row['nombre_categoria']; ?></p>
+                                <p><strong>Sub-servicio:</strong> <?php echo $row['nombre_sub_servicio']; ?></p>
+                                <p><strong>Comentarios:</strong> <?php echo htmlspecialchars($row['comentarios']); ?></p>
+                                <p><strong>Fecha:</strong> <?php echo date('d-m-Y H:i', strtotime($row['fecha_hora'])); ?></p>
                             </div>
                         </div>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <p class="text-center">No has enviado ninguna solicitud.</p>
-                <?php endif; ?>
+                    </div>
+                <?php endwhile; ?>
             </div>
         <?php } ?>
+      </div>
     </div>
-</div>
-<!-- Bootstrap CSS (si no está ya incluido) -->
-<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  </div>
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <!-- Respuestas tab content -->
+  <div id="Respuestas" class="tabcontent">
+    <div class="solicitud-container-wrapper">
+      <div class="solicitud-container" style="width: 930px;">
+        <h2>Respuestas a tus solicitudes</h2>
+        <h6 style="text-align: center; margin-bottom: 30px;">Aquí puedes ver las respuestas a tus solicitudes enviadas.</h6>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <?php
+        $sql_solis_respuestas = "
+            SELECT s.id, s.rut, a.nombre_area, c.nombre_categoria, ss.nombre_sub_servicio, s.comentarios, s.fecha_hora, r.respuesta_texto, r.archivo, r.fecha_respuesta
+            FROM solicitudes s
+            INNER JOIN soli_areas a ON s.id_area = a.id
+            INNER JOIN soli_categorias c ON s.id_categoria = c.id
+            INNER JOIN soli_servicios ss ON s.id_sub_servicio = ss.id
+            INNER JOIN soli_respuestas r ON s.id = r.solicitud_id
+            WHERE s.rut = '$rut_usuario'";
 
-<!-- Bootstrap JS -->
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+        $result_respuestas = $conn->query($sql_solis_respuestas);
+
+        if ($result_respuestas === false || $result_respuestas->num_rows == 0) {
+            echo "<p class='text-center'>No tienes respuestas a tus solicitudes.</p>";
+        } else {
+        ?>
+            <div class="row">
+                <?php while ($row = $result_respuestas->fetch_assoc()): ?>
+                    <div class="col-md-4 mb-4">
+                        <div class="card shadow-sm" onclick="openModal(<?php echo htmlspecialchars(json_encode($row)); ?>)">
+                            <div class="card-body">
+                                <h5 class="card-title">Solicitud Respondida</h5>
+                                <p><strong>Área:</strong> <?php echo $row['nombre_area']; ?></p>
+                                <p><strong>Categoría:</strong> <?php echo $row['nombre_categoria']; ?></p>
+                                <p><strong>Sub-servicio:</strong> <?php echo $row['nombre_sub_servicio']; ?></p>
+                                <p><strong>Fecha Solicitud:</strong> <?php echo date('d-m-Y H:i', strtotime($row['fecha_hora'])); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                <?php endwhile; ?>
+            </div>
+        <?php } ?>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap Modal -->
+  <div class="modal fade" id="responseModal" tabindex="-1" aria-labelledby="responseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="responseModalLabel">Detalles de la Respuesta</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Área:</strong> <span id="modalArea"></span></p>
+          <p><strong>Categoría:</strong> <span id="modalCategoria"></span></p>
+          <p><strong>Sub-servicio:</strong> <span id="modalSubServicio"></span></p>
+          <p><strong>Comentarios:</strong> <span id="modalComentarios"></span></p>
+          <p><strong>Fecha Solicitud:</strong> <span id="modalFechaSolicitud"></span></p>
+          <hr style="border-top: 3px solid #333;">
+          <h6>Respuesta:</h6>
+          <p><strong>Texto:</strong> <span id="modalRespuestaTexto"></span></p>
+          <p><strong>Fecha Respuesta:</strong> <span id="modalFechaRespuesta"></span></p>
+          <p><strong>Archivo:</strong> <a id="modalArchivo" href="" target="_blank"></a></p>
+          </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script_tabs_soli.js"></script>
 
 <!-- Modal para mostrar los detalles de la solicitud -->
 <div class="modal fade" id="solicitudModal" tabindex="-1" role="dialog" aria-labelledby="solicitudModalLabel" aria-hidden="true">
@@ -509,7 +706,8 @@ $conn->close();
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="solicitudModalLabel">Detalles de la Solicitud</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <!-- Botón de cerrar en la esquina superior derecha -->
+                <button type="button" class="close" onclick="forzarCierreModalSolicitud()" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -521,10 +719,9 @@ $conn->close();
                 <p id="modal-fecha"><strong>Fecha:</strong> <span></span></p>
             </div>
             <div class="modal-footer">
-                <!-- Asegúrate de tener este ID para el botón de eliminación -->
+                <button type="button" class="btn btn-secondary" onclick="forzarCierreModalSolicitud()">Cerrar</button>
                 <button type="button" class="btn btn-danger" id="eliminar-btn">Eliminar Solicitud</button>
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-
+                
                 <form method="POST" action="eliminar_solicitud.php" id="form-eliminar">
                     <input type="hidden" id="delete-solicitud-id" name="solicitud_id">
                 </form>
@@ -532,6 +729,106 @@ $conn->close();
         </div>
     </div>
 </div>
+
+<script>
+    function abrirModalSolicitud(area, categoria, subservicio, comentarios, fecha) {
+        document.getElementById('modal-area').querySelector('span').innerText = area;
+        document.getElementById('modal-categoria').querySelector('span').innerText = categoria;
+        document.getElementById('modal-subservicio').querySelector('span').innerText = subservicio;
+        document.getElementById('modal-comentarios').querySelector('span').innerText = comentarios;
+        document.getElementById('modal-fecha').querySelector('span').innerText = fecha;
+
+        // Mostrar el modal
+        $('#solicitudModal').modal('show');
+    }
+
+    function forzarCierreModalSolicitud() {
+        $('#solicitudModal').modal('hide');
+
+        // Limpiar fondo oscuro y clases adicionales si quedan bloqueadas
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+    }
+
+    // Asegurarse de que el modal se limpie correctamente al cerrar
+    $('#solicitudModal').on('hidden.bs.modal', function () {
+        $('body').removeClass('modal-open');
+        $('.modal-backdrop').remove();
+
+        // Limpia el contenido del modal para liberar memoria
+        document.getElementById('modal-area').querySelector('span').innerText = '';
+        document.getElementById('modal-categoria').querySelector('span').innerText = '';
+        document.getElementById('modal-subservicio').querySelector('span').innerText = '';
+        document.getElementById('modal-comentarios').querySelector('span').innerText = '';
+        document.getElementById('modal-fecha').querySelector('span').innerText = '';
+    });
+</script>
+
+
+
+<script>
+    // Function to open specific page tab
+    function openPage(pageName, elmnt, color) {
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+      }
+
+      tablinks = document.getElementsByClassName("tablink");
+      for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].style.backgroundColor = "";
+      }
+
+      document.getElementById(pageName).style.display = "block";
+      elmnt.style.backgroundColor = color;
+    }
+
+    // Set default tab to open
+    document.getElementById("defaultOpen").click();
+
+    function openModal(data) {
+    // Otros datos del modal
+    document.getElementById('modalArea').innerText = data.nombre_area;
+    document.getElementById('modalCategoria').innerText = data.nombre_categoria;
+    document.getElementById('modalSubServicio').innerText = data.nombre_sub_servicio;
+    document.getElementById('modalComentarios').innerText = data.comentarios;
+    document.getElementById('modalFechaSolicitud').innerText = data.fecha_hora;
+    document.getElementById('modalRespuestaTexto').innerText = data.respuesta_texto;
+    document.getElementById('modalFechaRespuesta').innerText = data.fecha_respuesta;
+
+    // Actualizar el enlace del archivo
+    const modalArchivo = document.getElementById('modalArchivo');
+    if (data.archivo) {
+        // Establecer el href con la ruta completa
+        modalArchivo.href = data.archivo;
+        
+        // Mostrar solo el nombre del archivo, sin el prefijo 'uploads/'
+        const nombreArchivo = data.archivo.split('/').pop(); // Esto toma solo el nombre del archivo
+        modalArchivo.innerText = nombreArchivo;
+    } else {
+        modalArchivo.removeAttribute('href');  // Elimina el enlace para que no sea clickeable
+        modalArchivo.style.color = 'black';  // Cambia el estilo para que no luzca como un enlace
+        modalArchivo.innerText = 'No hay archivo adjunto';
+    }
+
+    // Mostrar el modal (si estás usando Bootstrap 4)
+    $('#responseModal').modal('show');
+}
+  </script>
+
+
+<!-- Bootstrap CSS (si no está ya incluido) -->
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Bootstrap JS -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
 
 <script>
     function loadSolicitudModal(solicitudId) {
@@ -644,6 +941,7 @@ $conn->close();
 <!-- Importar SweetAlert y Bootstrap -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- Mostrar el modal de éxito si la solicitud fue enviada -->
@@ -691,11 +989,8 @@ $conn->close();
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <!-- Linking custom script -->
-<script src="js/script_cards.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
-      crossorigin="anonymous"></script>
-  <script src="js/script.js"></script>
+<script src="scripts/script_cards.js"></script>
+  <script src="scripts/script.js"></script>
   <footer class="footer">
     <div class="footer-container">
         <div class="footer-section">
