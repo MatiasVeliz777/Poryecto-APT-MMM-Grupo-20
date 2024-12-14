@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Error 403 - Contenido no permitido</title>
-    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="../styles/style.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -52,12 +52,24 @@
             box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
         }
 
+                /* Login */
+        .body-login {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: url('../Images/stefan-grage-Y4MKctPwIrw-unsplash.jpg') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
 
     </style>
 </head>
 <body class="body-login">
     <div class="login-container">
-        <img src="Images/logo_clinica.png" alt="Clínica San Agustín">
+        <img src="../Images/logo_clinica.png" alt="Clínica San Agustín">
         <h1>Error 403</h1>
         <p>No tienes permiso para acceder a este recurso.</p>
         <p><a href="\intranet\home.php">Volver al inicio</a></p>

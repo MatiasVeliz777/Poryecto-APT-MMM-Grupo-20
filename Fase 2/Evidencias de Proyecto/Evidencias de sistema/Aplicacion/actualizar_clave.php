@@ -12,19 +12,19 @@ $passwordUpdated = false;
 // Verificar si el formulario ha sido enviado
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Recoger los datos del formulario
-    $current_password = $_POST['password'];
-    $confirm_current_password = $_POST['confirm_current_password'];
-    $new_password = $_POST['new_password'];
-    $confirm_new_password = $_POST['confirm_new_password'];
+    $pass_acutal = $_POST['pass_acutal'];
+    $confirm_pass_actual = $_POST['confirm_pass_actual'];
+    $nueva_pass = $_POST['nueva_pass'];
+    $confirm_nueva_pass = $_POST['confirm_nueva_pass'];
 
     // Verificar que la contraseña actual se haya introducido dos veces correctamente
-    if ($current_password !== $confirm_current_password) {
+    if ($pass_acutal !== $confirm_pass_actual) {
         echo "Las contraseñas actuales no coinciden.";
         exit;
     }
 
     // Verificar que las nuevas contraseñas coincidan
-    if ($new_password !== $confirm_new_password) {
+    if ($nueva_pass !== $confirm_nueva_pass) {
         echo "Las nuevas contraseñas no coinciden.";
         exit;
     }
@@ -39,14 +39,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // Verificar que la contraseña actual proporcionada coincida con la almacenada en la base de datos
         // Si usas sha256, compara directamente las versiones hasheadas
-        if (hash('sha256', $current_password) !== $hashed_password) {
+        if (hash('sha256', $pass_acutal) !== $hashed_password) {
             echo "La contraseña actual no es correcta.";
             exit;
         }
         
         // Si todo está correcto, actualizar la contraseña en la base de datos
-        $new_hashed_password = hash('sha256', $new_password);
-        $update_query = "UPDATE usuarios SET contraseña = '$new_hashed_password' WHERE nombre_usuario = '$user_id'";
+        $nueva_hashed_password = hash('sha256', $nueva_pass);
+        $update_query = "UPDATE usuarios SET contraseña = '$nueva_hashed_password', clave_cambiada = 1 WHERE nombre_usuario = '$user_id'";
 
         if ($conn->query($update_query) === TRUE) {
             // Indicar que la contraseña fue actualizada exitosamente
@@ -81,17 +81,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="login-container">
         <img src="Images/logo_clinica.png" alt="Clínica San Agustín">
         <form action="" method="POST">
-            <label for="password">Contraseña actual:</label><br>
-            <input type="password" id="password" name="password" required><br><br>
+            <label for="pass_acutal">Contraseña actual:</label><br>
+            <input type="password" id="pass_acutal" name="pass_acutal" required><br><br>
 
-            <label for="confirm_current_password">Confirma tu contraseña actual:</label><br>
-            <input type="password" id="confirm_current_password" name="confirm_current_password" required><br><br>
+            <label for="confirm_pass_actual">Confirma tu contraseña actual:</label><br>
+            <input type="password" id="confirm_pass_actual" name="confirm_pass_actual" required><br><br>
             
-            <label for="new_password">Nueva contraseña:</label><br>
-            <input type="password" id="new_password" name="new_password" required><br><br>
+            <label for="nueva_pass">Nueva contraseña:</label><br>
+            <input type="password" id="nueva_pass" name="nueva_pass" required><br><br>
             
-            <label for="confirm_new_password">Confirmar nueva contraseña:</label><br>
-            <input type="password" id="confirm_new_password" name="confirm_new_password" required><br><br>
+            <label for="confirm_nueva_pass">Confirmar nueva contraseña:</label><br>
+            <input type="password" id="confirm_nueva_pass" name="confirm_nueva_pass" required><br><br>
             <div class="password-container">
             
                 <i class="fas fa-eye toggle-password" onclick="togglePassword()"></i>

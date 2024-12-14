@@ -5,12 +5,15 @@ Options -Indexes
 ErrorDocument 404 /intranet/404.php
 ErrorDocument 403 /intranet/403.php
 
+DirectoryIndex home.php
+
 # Habilitar motor de reescritura
 RewriteEngine On
 
 # Bloquear acceso directo a carpetas sensibles
 RewriteRule ^intranet/uploads/ - [F,L]
 RewriteRule ^intranet/archivos/ - [F,L]
+RewriteRule ^intranet/Images/ - [F,L]
 
 # Permitir acceso a archivos y directorios existentes
 RewriteCond %{REQUEST_FILENAME} -f [OR]
