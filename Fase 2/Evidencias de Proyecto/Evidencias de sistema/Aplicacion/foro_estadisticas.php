@@ -22,12 +22,6 @@ $result = $conn->query($sql);
 // Verificar si se encontró el usuario
 if ($result->num_rows > 0) {
     $user_data = $result->fetch_assoc(); // Extraer los datos del usuario
-    // Guardar todos los datos del usuario en la sesión
-    $_SESSION['rut'] = $user_data['rut'];
-    $_SESSION['nombre'] = $user_data['nombre'];
-    $_SESSION['correo'] = $user_data['correo'];
-    $_SESSION['imagen'] = $user_data['imagen']; // Asegúrate de guardar la imagen aquí
-    $_SESSION['cargo_id'] = $user_data['cargo_id'];
     $rol = $user_data['rol_id'];
     $admin = $user_data['admin'];
     // Guardar el rol en la sesión
@@ -49,25 +43,6 @@ if ($result_cargo->num_rows > 0) {
     $error = "No se encontraron datos para el cargo.";
 }
 
-// Función para traducir los nombres de los días y meses al español
-function traducir_fecha($fecha){
-    $dias = array("Sunday" => "Domingo", "Monday" => "Lunes", "Tuesday" => "Martes", 
-                  "Wednesday" => "Miércoles", "Thursday" => "Jueves", 
-                  "Friday" => "Viernes", "Saturday" => "Sábado");
-    
-    $meses = array("January" => "Enero", "February" => "Febrero", "March" => "Marzo", 
-                   "April" => "Abril", "May" => "Mayo", "June" => "Junio", 
-                   "July" => "Julio", "August" => "Agosto", "September" => "Septiembre", 
-                   "October" => "Octubre", "November" => "Noviembre", "December" => "Diciembre");
-    
-    $dia_nombre = $dias[date('l', strtotime($fecha))];
-    $dia_numero = date('d', strtotime($fecha));
-    $mes_nombre = $meses[date('F', strtotime($fecha))];
-    $anio = date('Y', strtotime($fecha));
-    
-    return "$dia_nombre, $dia_numero de $mes_nombre de $anio";
-}
-
 // Ruta de la carpeta donde están las imágenes de perfil
 $carpeta_fotos = 'Images/fotos_personal/'; // Cambia esta ruta a la carpeta donde están tus fotos
 $imagen_default = 'Images/profile_photo/imagen_default.jpg'; // Ruta de la imagen predeterminada
@@ -85,45 +60,71 @@ if (file_exists($ruta_imagen_usuario)) {
 } else {
     // Si no existe, se usa la imagen predeterminada
     $imagen_final = $imagen_default;
-    
 }
 
-// RUT del usuario logueado
-$usuario_rut = $_SESSION['rut'];
+$error = "";
+// Función para traducir los meses
+function traducir_mes($mes_numero) {
+    $meses = [
+        1 => "Enero", 2 => "Febrero", 3 => "Marzo",
+        4 => "Abril", 5 => "Mayo", 6 => "Junio",
+        7 => "Julio", 8 => "Agosto", 9 => "Septiembre",
+        10 => "Octubre", 11 => "Noviembre", 12 => "Diciembre"
+    ];
+    return $meses[$mes_numero];
+}
 
-// Consulta para obtener los últimos eventos a los que ha asistido el usuario
-$sql_eventos = "SELECT e.id, e.titulo, e.fecha
-                FROM asistencias_eventos a
-                JOIN eventos e ON a.evento_id = e.id
-                WHERE a.rut_usuario = ?
-                ORDER BY e.fecha DESC
-                LIMIT 3";
+// Filtro: Obtener mes seleccionado o "todos"
+$selected_month = isset($_GET['month']) ? $_GET['month'] : "all";
+$selected_year = isset($_GET['year']) ? $_GET['year'] : date('Y');
 
-$stmt_eventos = $conn->prepare($sql_eventos);
-$stmt_eventos->bind_param("s", $usuario_rut);
-$stmt_eventos->execute();
-$result_eventos = $stmt_eventos->get_result();
+// Crear la condición para el filtro de mes
+if ($selected_month === "all") {
+    $date_condition = "YEAR(fecha_creacion) = $selected_year";
+} else {
+    $date_condition = "YEAR(fecha_creacion) = $selected_year AND MONTH(fecha_creacion) = $selected_month";
+}
 
-// RUT del usuario logueado
-$usuario_rut = $_SESSION['rut'];
+// Consulta para obtener la cantidad total de empleados que participan en el foro
+$sql_participantes = "
+    SELECT DISTINCT rut_usuario 
+    FROM (
+        SELECT rut_usuario FROM foro_preguntas WHERE $date_condition
+        UNION
+        SELECT rut_usuario FROM foro_respuestas WHERE $date_condition
+    ) AS participantes";
+$result_participantes = $conn->query($sql_participantes);
+$total_participantes = ($result_participantes) ? $result_participantes->num_rows : 0;
 
+// Consulta para obtener empleados que solo han realizado preguntas
+$sql_solo_preguntas = "
+    SELECT rut_usuario 
+    FROM foro_preguntas 
+    WHERE $date_condition
+    AND rut_usuario NOT IN (
+        SELECT rut_usuario FROM foro_respuestas WHERE $date_condition)";
+$result_solo_preguntas = $conn->query($sql_solo_preguntas);
+$total_solo_preguntas = ($result_solo_preguntas) ? $result_solo_preguntas->num_rows : 0;
 
-// Consulta para obtener los últimos eventos a los que ha asistido el usuario
-$sql_capas = "SELECT c.id, c.titulo, c.fecha
-                FROM asistencia_capacitaciones a
-                JOIN capacitaciones c ON a.capacitacion_id = c.id
-                WHERE a.rut_usuario = ?
-                ORDER BY c.fecha DESC
-                LIMIT 3";
+// Consulta para obtener empleados que solo han realizado respuestas
+$sql_solo_respuestas = "
+    SELECT rut_usuario 
+    FROM foro_respuestas 
+    WHERE $date_condition
+    AND rut_usuario NOT IN (
+        SELECT rut_usuario FROM foro_preguntas WHERE $date_condition)";
+$result_solo_respuestas = $conn->query($sql_solo_respuestas);
+$total_solo_respuestas = ($result_solo_respuestas) ? $result_solo_respuestas->num_rows : 0;
 
-$stmt_capas = $conn->prepare($sql_capas);
-$stmt_capas->bind_param("s", $usuario_rut);
-$stmt_capas->execute();
-$result_capas = $stmt_capas->get_result();
-
-
-$conn->close();
- 
+// Consulta para obtener empleados que han realizado tanto preguntas como respuestas
+$sql_ambas = "
+    SELECT DISTINCT rut_usuario 
+    FROM foro_preguntas 
+    WHERE $date_condition
+    AND rut_usuario IN (
+        SELECT rut_usuario FROM foro_respuestas WHERE $date_condition)";
+$result_ambas = $conn->query($sql_ambas);
+$total_ambas = ($result_ambas) ? $result_ambas->num_rows : 0;
 ?>
 
 
@@ -131,42 +132,46 @@ $conn->close();
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil</title>
+    <title>Dashboard de foro</title>
+
     <link rel="icon" href="Images/icono2.png" type="image/x-icon">
     <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
-    <link rel="stylesheet" href="styles/style.css">
-    <link rel="stylesheet" href="styles/style_encuestas.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" 
+    integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="styles/style.css">
+
     <style>
-        .list-group-item {
-            padding: 15px;
-            transition: background-color 0.3s, box-shadow 0.3s;
+        body {
+            font-family: Arial, sans-serif;
         }
 
-        .list-group-item:hover {
-            background-color: #A6D9F1;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px auto;
+            max-width: 700px;
         }
 
-        .acciones-user h5 {
-            font-weight: bold;
-            color: #333;
-        }
-        @media (max-width: 768px) {
-            .container-blanco{
-                width: 90% !important;
-                }
+        canvas {
+            max-width: 100%;
+            height: auto;
         }
 
+        form {
+            margin-bottom: 20px;
+        }
     </style>
 </head>
-
-<body>
+<body style="padding-right: 0px;">
     
 <div class="main-content">
 <div class="wrapper">
@@ -733,193 +738,182 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-        <!-- Contenedor personalizado para el perfil -->
-<div class="custom-container">
-<!-- Imagen del perfil -->
- 
-<!-- Código HTML para mostrar la imagen con la lógica de verificación directamente en el src -->
-<img src="<?php 
-    // Verificar si la imagen del usuario existe en la carpeta
-    if (file_exists($ruta_imagen_usuario)) {
-        // Si la imagen existe, se usa esa ruta
-        echo $ruta_imagen_usuario;
-    } else {
-        // Si no existe, se usa la imagen predeterminada
-        echo $imagen_default;
-    }
-?>" class="profile-picture" alt="Foto de Perfil">
+        
 
-<!-- Información del perfil -->
-<div class="profile-info">
-    <h3><?php echo $user_data['nombre']; ?></h3>
-    <p><strong>RUT :</strong> <?php echo $user_data['rut']; ?></p>
-    <p><strong>Fecha de Nacimiento:</strong> 
-    <?php 
-    // Usar la función para formatear la fecha
-    echo traducir_fecha($user_data['fecha_nacimiento']);
-    ?>
-    </p>
-    <p><strong>Cargo:</strong> <?php echo $cargo_data['NOMBRE_CARGO']; ?></p>
-    <a href="actualizar_clave.php"><p>¿Cambia contraseña?</p></a>
-</div>
-</div>
 
-<div class="container-blanco" style="background-color: white; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); border-radius: 8px; padding: 0px; width: 70%; margin: 20px auto;">
+   
+        <header class="solicitud-header">
+        <h1>Dashboard de Participación en el Foro</h1>
+    </header>
 
-<div class="acciones" style="padding: 30px; width: 100%; align-items: center; display:flex; flex-direction: column; justify-content: center;">
-<div class="acciones-user" style="margin-bottom: 40px; width: 90%;">
-    <!-- Últimos eventos asistidos -->
-    <h5 class="mb-3" STYLE="TEXT-ALIGN: CENTER; font-size: 1.6rem;">Últimos Eventos Asistidos</h5>
-    <p STYLE="TEXT-ALIGN: CENTER;">Se muestran los últimos 3 eventos a los que has asistido. Para ver el historial  </p>
-    <P STYLE="TEXT-ALIGN: CENTER;">completo de tus asistencias, dirígete a la <a href="calendario.php">página de eventos</a></P>
-    <?php if ($result_eventos->num_rows > 0): ?>
-        <div class="list-group">
-            <?php while ($evento = $result_eventos->fetch_assoc()): ?>
-                <a href="evento_asistencia.php?evento_id=<?php echo $evento['id']; ?>" class="list-group-item list-group-item-action" style="border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; text-decoration: none;">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <strong>Evento:</strong> <?php echo htmlspecialchars($evento['titulo']); ?>
-                        </div>
-                        <div class="col-md-6 text-md-end">
-                            <strong>Fecha:</strong> <?php echo traducir_fecha($evento['fecha']); ?>
-                        </div>
-                    </div>
-                </a>
-            <?php endwhile; ?>
+    <!-- Librerías al final del body -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <div class="solicitud-container-wrapper">
+    <div class="container mt-0">
+        <!-- Título del Dashboard -->
+        <div class="text-center mb-4">
+            <h2>Grafico de Participación en el Foro</h2>
         </div>
-    <?php else: ?>
-        <p>No hay eventos recientes.</p>
-    <?php endif; ?>
-</div>
 
-<div class="acciones-user" style="margin-bottom: 40px; width: 90%;">
-    <!-- Últimos eventos asistidos -->
-    <h5 class="mb-3" STYLE="TEXT-ALIGN: CENTER; font-size: 1.6rem;">Últimas Capacitaciones Asistidas</h5>
-    <p STYLE="TEXT-ALIGN: CENTER;">Se muestran los últimas 3 capacitaciones a los que has asistido. Para ver el historial  </p>
-    <P STYLE="TEXT-ALIGN: CENTER;">completo de tus asistencias, dirígete a la <a href="capacitaciones.php">página de Capacitaciones</a></P>
-    <?php if ($result_capas->num_rows > 0): ?>
-        <div class="list-group">
-            <?php while ($capas = $result_capas->fetch_assoc()): ?>
-                <a href="capacitacion_asistencia.php?capacitacion_id=<?php echo $capas['id']; ?>" class="list-group-item list-group-item-action" style="border: 1px solid #ddd; border-radius: 5px; margin-bottom: 10px; text-decoration: none;">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <strong>Evento:</strong> <?php echo htmlspecialchars($capas['titulo']); ?>
-                        </div>
-                        <div class="col-md-6 text-md-end">
-                            <strong>Fecha:</strong> <?php echo traducir_fecha($capas['fecha']); ?>
-                        </div>
-                    </div>
-                </a>
-            <?php endwhile; ?>
+        <!-- Filtro de Mes y Año -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-8">
+                <form method="GET" class="d-flex flex-wrap justify-content-center align-items-center" style="background-color: white; padding: 15px; border-radius: 5px;">
+                    <label for="month" class="form-label me-2">Mes:</label>
+                    <select id="month" name="month" class="form-select me-3" style="width: auto;">
+                        <option value="all" <?php echo $selected_month === "all" ? 'selected' : ''; ?>>Todos</option>
+                        <?php for ($i = 1; $i <= 12; $i++): ?>
+                            <option value="<?php echo $i; ?>" <?php echo (int)$i === (int)$selected_month ? 'selected' : ''; ?>>
+                                <?php echo traducir_mes($i); ?>
+                            </option>
+                        <?php endfor; ?>
+                    </select>
+                    <label for="year" class="form-label me-2">Año:</label>
+                    <select id="year" name="year" class="form-select me-3" style="width: auto;">
+                        <?php for ($i = date('Y') - 5; $i <= date('Y'); $i++): ?>
+                            <option value="<?php echo $i; ?>" <?php echo $i == $selected_year ? 'selected' : ''; ?>>
+                                <?php echo $i; ?>
+                            </option>
+                        <?php endfor; ?>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                </form>
+            </div>
         </div>
-    <?php else: ?>
-        <p>No hay eventos recientes.</p>
-    <?php endif; ?>
-</div>
 
+        <!-- Total de empleados activos -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-10 text-center">
+                <p><strong>Total de empleados activos en el foro:</strong> <?php echo $total_participantes; ?></p>
+            </div>
+        </div>
 
-    <div class="acciones-user" style="margin-bottom: 20px; width: 90%;">
-        <!-- Últimos eventos asistidos -->
-        <h5 STYLE="TEXT-ALIGN: CENTER;font-size: 1.6rem;">Respuestas encuestas</h5>
-        <p STYLE="TEXT-ALIGN: CENTER;">Se muestran las últimas 3 Respuestas que usted ha respondido. Para ver el historial  </p>
-        <P STYLE="TEXT-ALIGN: CENTER; margin-bottom: 40px;">completo de tus Respuestas, dirígete a la <a href="ver_enc_prueba.php">página de Encuestas</a></P>
-    <?php 
-        include("conexion.php");
-        // Mostrar las preguntas ya respondidas
-        $query_respondidas = "
-        SELECT p.*, r.id_respuesta, r.calificacion, r.respuesta, r.fecha_respuesta
-        FROM preguntas_encuesta p
-        JOIN respuestas_encuesta r
-        ON p.id_pregunta = r.id_pregunta
-        WHERE r.rut_usuario = ? 
-        ORDER BY r.fecha_respuesta DESC
-        LIMIT 3
-        ";
+        <!-- Gráfico -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-10">
+                <div class="card shadow-sm p-3 chart-card">
+                    <canvas id="forumParticipationChart"></canvas>
+                </div>
+            </div>
+        </div>
 
-        $stmt_respondidas = $conn->prepare($query_respondidas);
-        $stmt_respondidas->bind_param("s", $_SESSION['rut']);
-        $stmt_respondidas->execute();
-        $result_respondidas = $stmt_respondidas->get_result();
-
-        if ($result_respondidas->num_rows > 0) {
-            while ($row = $result_respondidas->fetch_assoc()) {
-                
-                echo "<div class='input-group1' style='margin: 0px; padding:20px;'>";
-                echo "<div class='pregunta-contenedor'>";
-                
-                echo "<div class='pregunta-calificacion' style='margin-bottom: 0px;'>";
-                echo "<label class='form-label pregunta-label'>{$row['pregunta']}</label>";
-            
-                echo "<div class='calificacion-estrellas'>";
-                
-                echo "</div>";
-                
-                echo "</div>";
-                
-                
-                echo "<div class='pregunta-calificacion'>";
-                // Mostrar estrellas en función de la calificación si la pregunta no es de selección única
-                if ($row['tipo_pregunta'] !== 'seleccion_unica') {
-                    echo "<div class='calificacion-estrellas'>";
-                    for ($i = 1; $i <= 5; $i++) {
-                        if ($i <= $row['calificacion']) {
-                            // Estrella llena (amarilla)
-                            echo "<span class='estrella llena'>★</span>";
-                        } else {
-                            // Estrella vacía (gris)
-                            echo "<span class='estrella vacia'>★</span>";
-                        }
-                    }
-
-                    echo "</div>";
-                }
-
-                // Mostrar la fecha y hora junto a la calificación
-                
-                echo "</div>";
-
-                // Mostrar respuesta si existe
-                if (empty($row['respuesta'])) {
-                    echo "<div class='respuesta-contenedor'>";
-                    echo "<p class='respuesta-texto'>Sin respuesta comentada.</p>";
-                    echo "</div>";
-                } else {
-                    echo "<div class='respuesta-contenedor'>";
-                    echo "<p class='respuesta-texto'><strong>Respuesta:</strong> {$row['respuesta']}</p>";
-                    echo "</div>";
-                    echo "<p class='fecha-respuesta' style='display: inline-block; margin:0px;  text-align: center;'><strong></strong> " . date('d-m-Y', strtotime($row['fecha_respuesta'])) . "</p>";
-
-                }
-
-                echo "</div>";
-                echo "<hr>";
-                echo "</div>";
-            }
-        } else {
-            echo "<p>No has respondido ninguna encuesta aún.</p>";
-        }
-
-        // Cerrar los statements y la conexión
-        $stmt_respondidas->close();
-        $conn->close();
-
-        ?>
+        <!-- Botón para descargar el gráfico -->
+        <div class="row justify-content-center">
+            <div class="text-center mb-4">
+                <button id="downloadPDF" class="btn btn-success">Descargar PDF</button>
+            </div>
+        </div>
     </div>
-  
+</div>
+
+<script>
+    const ctx = document.getElementById('forumParticipationChart').getContext('2d');
+
+    // Datos para el gráfico
+    const data = {
+        labels: ['Solo Preguntas', 'Solo Respuestas', 'Ambas Actividades'],
+        datasets: [{
+            label: 'Cantidad de Empleados',
+            data: [
+                <?php echo $total_solo_preguntas; ?>, 
+                <?php echo $total_solo_respuestas; ?>, 
+                <?php echo $total_ambas; ?>
+            ],
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.6)',
+                'rgba(75, 192, 192, 0.6)',
+                'rgba(255, 159, 64, 0.6)'
+            ],
+            borderColor: [
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(255, 159, 64, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+
+    // Configuración del gráfico
+    new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Participación de Empleados en el Foro'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cantidad de Empleados'
+                    }
+                }
+            }
+        }
+    });
+
+    document.getElementById("downloadPDF").addEventListener("click", function () {
+    // Crear instancia de jsPDF
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+
+    // Añadir título al PDF
+    pdf.setFontSize(18);
+    pdf.text("Gráfico de Participación en el Foro", 10, 20);
+
+    // Añadir estadísticas
+    pdf.setFontSize(12);
+    pdf.text("Total de empleados activos en el foro: <?php echo $total_participantes; ?>", 10, 30);
+
+    // Capturar el gráfico como imagen
+    const chartCanvas = document.getElementById("forumParticipationChart");
+    const chartImage = chartCanvas.toDataURL("image/png", 1.0);
+
+    // Añadir gráfico al PDF
+    pdf.addImage(chartImage, "PNG", 10, 40, 180, 90);
+
+    // Descargar PDF
+    pdf.save("foro-participacion.pdf");
+});
+
+
+</script>
+
+</div>
 </div>
 </div>
 
 
-</div>
-</div>
 
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
-<footer class="footer">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
+        crossorigin="anonymous"></script>
+    <script src="scripts/script.js"></script>
+
+    <footer class="footer">
     <div class="footer-container">
         <div class="footer-section">
             <h4>Contáctanos</h4>
-            <p>Teléfono: +56 9 1234 5678</p>
-            <p>Email: contacto@clinicadesalud.cl</p>
+            <p>Teléfono: 56 22 928 1600</p>
+            <p>www.saludsanagustin.cl/csa/</p>
+        </div>
+        <div class="footer-section">
+            <h4>Horarios de atención</h4>
+            <p>De Lunes a Sábado:</p>
+            <p>Desde 07:00 hrs.</p>
+            <p>Domingo: Desde las 08:00</p>
         </div>
         <div class="footer-section">
             <h4>Síguenos en Redes Sociales</h4>
@@ -932,18 +926,13 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
         <div class="footer-section">
             <h4>Dirección</h4>
-            <p>Avenida Siempre Viva 742</p>
-            <p>Santiago, Chile</p>
+            <p>San Agustín 473 – 442</p>
+            <p>Melipilla, Chile</p>
         </div>
     </div>
     <div class="footer-bottom">
         <p>&copy; 2024 Clínica de Salud. Todos los derechos reservados.</p>
     </div>
 </footer> 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
-        crossorigin="anonymous"></script>
-    <script src="scripts/script.js"></script>
 </body>
-
 </html>

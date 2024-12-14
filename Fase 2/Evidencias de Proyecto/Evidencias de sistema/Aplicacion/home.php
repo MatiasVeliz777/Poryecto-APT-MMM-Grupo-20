@@ -26,7 +26,7 @@ include("conexion.php");
 $usuario = $_SESSION['usuario'];
 
 // Consultar los datos del empleado en la tabla 'personal'
-$sql = "SELECT rut, nombre, correo, imagen, fecha_nacimiento, cargo_id, rol_id
+$sql = "SELECT rut, nombre, correo, imagen, fecha_nacimiento, cargo_id, rol_id, admin
         FROM personal 
         WHERE rut = (SELECT rut FROM usuarios WHERE nombre_usuario = '$usuario')";
 $result = $conn->query($sql);
@@ -41,8 +41,10 @@ if ($result->num_rows > 0) {
     $_SESSION['imagen'] = $user_data['imagen']; // Asegúrate de guardar la imagen aquí
     $_SESSION['cargo_id'] = $user_data['cargo_id'];
     $rol = $user_data['rol_id'];
+    $admin = $user_data['admin'];
     // Guardar el rol en la sesión
     $_SESSION['rol'] = $rol;
+    $_SESSION['admin'] = $admin;
 } else {
     $error = "No se encontraron datos para el usuario.";
 }
@@ -139,7 +141,7 @@ $year_actual_cum = date('Y');
 // Verificar si estamos en el mes y año actual, para filtrar los días ya pasados
 if ($mes == $mes_actual_cum && $year == $year_actual_cum) {
     // Mostrar solo los cumpleaños que aún no han pasado
-    $sql_tarjetas_cumple = "SELECT nombre, fecha_nacimiento, imagen 
+    $sql_tarjetas_cumple = "SELECT nombre, fecha_nacimiento, imagen, rut
                             FROM personal 
                             WHERE MONTH(fecha_nacimiento) = ? 
                             AND DAY(fecha_nacimiento) >= ? 
@@ -212,6 +214,26 @@ while ($row_cum = $result_tarjetas_cumple->fetch_assoc()) {
     $nombre_cum = htmlspecialchars($row_cum['nombre']);
     $fecha_cum = traducir_mes_cum($row_cum['fecha_nacimiento']);  // Traducir la fecha
 
+   
+    $nombre_usuario_Session = $_SESSION['nombre'];  // Nombre completo de la persona logeada (quien va a dar la bienvenida)
+
+    // Asegurarnos de que $nuevo_user contiene los datos del nuevo usuario
+    $rut_usuario_cum = $row_cum['rut'];
+
+    // Verificamos si ya existe una notificación de bienvenida para este usuario
+    $query_check = "SELECT * FROM notificaciones WHERE rut = ? AND mensaje LIKE ?";
+    $stmt_check = $conn->prepare($query_check);
+    $mensaje_bienvenida = "🎂El usuario $nombre_usuario_Session te ha deseado un feliz cumpleaños.🎂"; // El mensaje debe ser exactamente como se almacenará
+
+    // Buscamos en la base de datos si ya existe este mensaje para el nuevo usuario
+    $stmt_check->bind_param("ss", $rut_usuario_cum, $mensaje_bienvenida);
+    $stmt_check->execute();
+    $result_check = $stmt_check->get_result();
+
+    $mostrar_boton = ($result_check->num_rows == 0);  // Si no hay notificación, mostramos el botón
+
+    $stmt_check->close();
+
     // Generar el HTML de la tarjeta de cumpleaños
     $cards_html_cum .= "
     <div id='birthday-$dia_cum' class='birthday-card'>
@@ -222,8 +244,12 @@ while ($row_cum = $result_tarjetas_cumple->fetch_assoc()) {
 
     // Mostrar el botón solo si el empleado está cumpliendo años hoy
     if ($dia_cum == $dia_actual && $mes_cum == $mes_actual) {
-        $cards_html_cum .= "<button class='greet-btn'>Saludarlo en su día</button>";
-    }
+
+        if ($mostrar_boton){
+            $cards_html_cum .= "
+            <button class='greet-btn' onclick=\"saludarCumple('$rut_usuario_cum', '$nombre_cum')\">Saludarlo en su día</button>";
+        }
+    } 
 
     $cards_html_cum .= "
         </div>
@@ -249,43 +275,53 @@ $query->bind_param("iis", $month, $year, $fecha_actual);
 $query->execute();
 $result = $query->get_result();
 
-// Generar tarjetas de eventos
+// Inicializar tarjetas de eventos como una cadena vacía
 $eventCards = '';
-while ($row = $result->fetch_assoc()) {
-    $eventCards .= "
-    <div id='event-{$row['id']}' class='event-card clickeable' onclick=\"location.href='evento_asistencia.php?evento_id={$row['id']}'\" style='cursor: pointer; position: relative;'>
-        <div class='event-header'>
-            <p class='event-date'>" . traducir_fecha($row['fecha']) . "</p>
-            <h5 class='event-title'>{$row['titulo']}</h5>
-        </div>
-        <p class='event-time' style='margin-top: 0px;'>Hora: " . date('H:i', strtotime($row['hora'])) . "</p>
-        <p class='event-location'>Ubicación: {$row['ubicacion']}</p>";
+// Verificar si hay resultados en la consulta
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        $eventCards .= "
+        <div id='event-{$row['id']}' class='event-card clickeable' onclick=\"location.href='evento_asistencia.php?evento_id={$row['id']}'\" style='cursor: pointer; position: relative;'>
+            <div class='event-header'>
+                <p class='event-date'>" . traducir_fecha($row['fecha']) . "</p>
+                <h5 class='event-title'>{$row['titulo']}</h5>
+            </div>
+            <p class='event-time' style='margin-top: 0px;'>Hora: " . date('H:i', strtotime($row['hora'])) . "</p>
+            <p class='event-location'>Ubicación: {$row['ubicacion']}</p>";
 
-    // Botón "Asistir" si el usuario no está registrado y el evento es futuro
-    $evento_id = $row['id'];
-    $rut_usuario = $_SESSION['rut'];
+        // Botón "Asistir" si el usuario no está registrado y el evento es futuro
+        $evento_id = $row['id'];
+        $rut_usuario = $_SESSION['rut'];
 
-    // Comprobar si el usuario ya está registrado para el evento
-    $check_asistencia_sql = "SELECT * FROM asistencias_eventos WHERE evento_id = ? AND rut_usuario = ?";
-    $stmt_check_asistencia = $conn->prepare($check_asistencia_sql);
-    $stmt_check_asistencia->bind_param("is", $evento_id, $rut_usuario);
-    $stmt_check_asistencia->execute();
-    $result_check_asistencia = $stmt_check_asistencia->get_result();
+        // Comprobar si el usuario ya está registrado para el evento
+        $check_asistencia_sql = "SELECT * FROM asistencias_eventos WHERE evento_id = ? AND rut_usuario = ?";
+        $stmt_check_asistencia = $conn->prepare($check_asistencia_sql);
+        $stmt_check_asistencia->bind_param("is", $evento_id, $rut_usuario);
+        $stmt_check_asistencia->execute();
+        $result_check_asistencia = $stmt_check_asistencia->get_result();
 
-    if ($result_check_asistencia->num_rows == 0) {
-        // Mostrar el botón "Asistir" si el usuario no está registrado y el evento es futuro
-        $eventCards .= "<form method='POST' style='display: inline;' onclick='event.stopPropagation();'>
-                            <input type='hidden' name='evento_id' value='{$row['id']}'>
-                            <button type='submit' style='width: 80%; padding: 5px; margin-top: 5px; text-align: center;'name='registrar_asistencia' class='btn btn-outline-primary btn-sm'>Asistir al Evento</button>
-                        </form>";
-    }else {
-        // Mostrar un texto en verde si el usuario ya está registrado en el evento
-        $eventCards .= "<p style='color: #23be69; font-weight: none; margin-top: 5px;'>Ya estás registrado en este evento</p>";
+        if ($result_check_asistencia->num_rows == 0) {
+            $eventCards .= "<form method='POST' style='display: inline;' onclick='event.stopPropagation();'>
+                                <input type='hidden' name='evento_id' value='{$row['id']}'>
+                                <button type='submit' style='width: 80%; padding: 5px; margin-top: 5px; text-align: center;' name='registrar_asistencia' class='btn btn-outline-primary btn-sm'>Asistir al Evento</button>
+                            </form>";
+        } else {
+            $eventCards .= "<p style='color: #23be69; font-weight: none; margin-top: 5px;'>Ya estás registrado en este evento</p>";
+        }
+
+        $stmt_check_asistencia->close();
+
+        $eventCards .= "</div><hr>";
     }
-
-    $stmt_check_asistencia->close();
-
-    $eventCards .= "</div><hr>";
+} else {
+    // Mostrar mensaje si no hay eventos
+    $eventCards = "
+    <div class='card'>
+        <div class='card-body'>
+            <h3 class='text-center'>No hay eventos disponibles</h3>
+            <p class='text-center'>No se han programado eventos para este momento.</p>
+        </div>
+    </div>";
 }
 
 if (isset($_POST['registrar_asistencia'])) {
@@ -338,6 +374,7 @@ $result = $query->get_result();
 
 // Generar tarjetas de capacitaciones
 $trainingCards = '';
+// Verificar si hay resultados en la consulta
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $trainingCards .= "
@@ -349,10 +386,11 @@ if ($result->num_rows > 0) {
             <p class='event-time' style='margin-top: 0px;'>Hora: " . date('H:i', strtotime($row['hora'])) . "</p>
             <p class='event-location'>Ubicación: {$row['ubicacion']}</p>";
 
-        // Comprobar si el usuario ya está registrado para la capacitación
+        // Botón "Asistir" si el usuario no está registrado y la capacitación es futura
         $capacitacion_id = $row['id'];
         $rut_usuario = $_SESSION['rut'];
 
+        // Comprobar si el usuario ya está registrado para la capacitación
         $check_asistencia_sql = "SELECT * FROM asistencia_capacitaciones WHERE capacitacion_id = ? AND rut_usuario = ?";
         $stmt_check_asistencia = $conn->prepare($check_asistencia_sql);
         $stmt_check_asistencia->bind_param("is", $capacitacion_id, $rut_usuario);
@@ -373,9 +411,16 @@ if ($result->num_rows > 0) {
         $trainingCards .= "</div><hr>";
     }
 } else {
-    // Si no hay capacitaciones, mostrar un mensaje
-    $trainingCards = "<p style='text-align: center; color: #555; font-size: 1.2rem; margin-top: 20px;'>No hay capacitaciones programadas para este mes.</p>";
+    // Mostrar mensaje si no hay capacitaciones para este mes
+    $trainingCards = "
+    <div class='card'>
+        <div class='card-body'>
+            <h3 class='text-center'>No hay capacitaciones disponibles</h3>
+            <p class='text-center'>No se han programado capacitaciones para este mes.</p>
+        </div>
+    </div>";
 }
+    
 
 if (isset($_POST['registrar_asistencia_c'])) {
     $capacitacion_id = $_POST['capacitacion_id'];
@@ -409,9 +454,8 @@ if (isset($_POST['registrar_asistencia_c'])) {
     $stmt_check->close();
 }
 
+
 $conn->close();
-
-
 ?>
 
 
@@ -433,6 +477,8 @@ $conn->close();
     <link rel="stylesheet" href="styles/style_cards.css">
     <link rel="stylesheet" href="styles/style_new_cards.css">
     <link rel="stylesheet" href="styles/style_cums.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
     <style>
         body{
             font-family: "Montserrat", sans-serif;
@@ -555,28 +601,12 @@ $conn->close();
             display: flex;
             justify-content: center;
         }
-
-        .birthday-list-box1{
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-            width: 40%;
-            max-height: 505px;
-            overflow-y: auto;
-            justify-content: center;
-            align-items: center;
-        }
         /* Responsivo para pantallas pequeñas (máximo 768px) */
 @media (max-width: 768px) {
     /* Contenedor principal */
     .custom-container {
         flex-direction: column;
         align-items: center;
-    }
-    .birthday-list-box1{
-        margin-top:300px;
-        width: 90%;
     }
 
     /* Tarjeta de perfil */
@@ -595,14 +625,9 @@ $conn->close();
     .empleado-mes-card {
         flex-direction: column;
         align-items: center;
-        width: 90%;
+        margin: 0px;
     }
-    .card-emp-mes{
-        width: 100%;
-    }
-    .card{
-        width: 90%;
-    }
+
     /* Lista de eventos */
     .events-list {
         max-height: 300px;
@@ -621,38 +646,10 @@ $conn->close();
     .event-title {
         font-size: 0.9rem;
     }
-    .main, .main-content, .wrapper {
-        width: 100%;
-        padding: 0px;
-        margin-left: 0px;   
-    }
-
 }
 /* Responsive para pantallas pequeñas (hasta 768px) */
-@media (max-width: 600px) {
-    /* Ajuste de ancho y padding en el body */
-    body {
-        width: 100%;
-        padding: 0;
-        margin: 0;
-        overflow-x: hidden; /* Evitar el desplazamiento horizontal */
-    }
-
-    /* Ajustes del contenedor principal */
-    .main, .main-content, .wrapper {
-        width: 100%;
-        padding: 0px;
-        margin-left: 0px;   
-    }
-
-    /* Sidebar responsive */
-    #sidebar {
-        width: 100%;
-        position: relative;
-        left: 0;
-        top: 0;
-        display: none; /* Puedes habilitar un menú desplegable para móviles */
-    }
+@media (max-width: 720px) {
+    
 
     /* Ajuste del botón toggle en el sidebar */
     .toggle-btn {
@@ -672,6 +669,9 @@ $conn->close();
         width: 120%;
     }
 
+ 
+
+
     /* Ajuste del carrusel */
     .carousel-caption h1 {
         font-size: 1.2rem;
@@ -684,12 +684,15 @@ $conn->close();
     /* Títulos y secciones */
     .titulo-home h2 {
         font-size: 1.5rem;
-        margin: 20px;
+        
+    }
+
+    .titulo-home {
+        margin-top: 10px !important; 
     }
 
     .titulo-home p {
         font-size: 0.9rem;
-        margin: 20px;
     }
 
     /* Footer responsive */
@@ -722,11 +725,10 @@ $conn->close();
 
     /* Lista de eventos y capacitaciones */
     .birthday-list-box {
-        width: 90% !important;
+        width: 100% !important;
     }
     
     #events-list, #event-list {
-        display: flex;
         flex-direction: column;
         align-items: center;
     }
@@ -737,17 +739,27 @@ $conn->close();
         text-align: center;
         padding: 10px 0;
     }
+    .empleado-mes-card .card-emp-mes{
+        width: 100% !important;
+        height: 520px !important;
+    }
 }
-.card-body{
-    max-height: 230px; /* Limitar la altura máxima del cuerpo de la tarjeta */
-    overflow: auto; /* Hacer que el contenido restante sea scrolleable si excede el límite */
-    scrollbar-width: none; /* Para Firefox */
-}
+    .card-body{
+        max-height: 230px; /* Limitar la altura máxima del cuerpo de la tarjeta */
+        overflow: auto; /* Hacer que el contenido restante sea scrolleable si excede el límite */
+        scrollbar-width: none; /* Para Firefox */
+    }
+
+    .cards-new-employees-wrapper.center {
+        justify-content: center;
+        display: flex;
+    }
 
     </style>
 </head>
 
 <body>
+    
     
 <div class="main-content">
 <div class="wrapper">
@@ -757,7 +769,7 @@ $conn->close();
                     <i class="lni lni-menu"></i>
                 </button>
                 <div class="sidebar-logo">
-                    <a href="home.php">Portal RHH</a>
+                    <a href="home.php">Intranet</a>
                 </div>
             </div>
              <!-- Contenedor de la imagen de perfil -->
@@ -776,19 +788,39 @@ $conn->close();
         </div>
             <ul class="sidebar-nav">
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
-                        data-bs-target="#profile" aria-expanded="false" aria-controls="profile">
-                        <i class="lni lni-user"></i>
-                        <span>Perfil</span>
+                    <a href="home.php" class="sidebar-link">
+                    <i class="lni lni-home"></i>
+
+                           <span>Inicio</span>
                     </a>
-                    <ul id="profile" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                </li>
+            <?php if ($_SESSION['admin'] == 1): ?>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
+                        data-bs-target="#añadir" aria-expanded="false" aria-controls="añadir">
+                        <i class="lni lni-circle-plus"></i>
+                        <span>Añadir</span>
+                    </a>
+                    <ul id="añadir" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        
+                    <li class="sidebar-item">
+                        <a href="agregar_personal.php" class="sidebar-link">Agregar Empleado</a>
+                    </li>
                         <li class="sidebar-item">
-                            <a href="perfil.php" class="sidebar-link">Perfil</a>
+                            <a href="empleado_mes.php" class="sidebar-link">Agregar Empleado del Año</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="#" class="sidebar-link">Mis Datos</a>
+                            <a href="felicitaciones_agregar.php" class="sidebar-link">Agregar Felicitacion</a>
                         </li>
                     </ul>
+                </li>
+                <?php endif; ?>
+
+                <li class="sidebar-item">
+                    <a href="perfil.php" class="sidebar-link">
+                    <i class="lni lni-user"></i>
+                        <span>Perfil</span>
+                    </a>
                 </li>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
@@ -797,45 +829,36 @@ $conn->close();
                         <span>Personal</span>
                     </a>
                     <ul id="multi" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
-                    <?php if ($_SESSION['rol'] == 5): ?>
-                    <li class="sidebar-item">
-                            <a href="agregar_personal.php" class="sidebar-link">Agregar Empleado</a>
+                        <li class="sidebar-item">
+                            <a href="empleados_meses.php" class="sidebar-link">Empleado del Año</a>
                         </li>
-                    <li class="sidebar-item">
-                            <a href="empleado_mes.php" class="sidebar-link">Agregar Empleado del Mes</a>
-                        </li>
-                        <?php endif; ?>
-                    <li class="sidebar-item">
-                            <a href="empleados_meses.php" class="sidebar-link">Empleado del mes</a>
+                        <li class="sidebar-item">
+                            <a href="felicitaciones.php" class="sidebar-link">Felicitaciones</a>
                         </li>
                         <li class="sidebar-item">
                             <a href="personal_nuevo.php" class="sidebar-link">Nuevos empleados</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="cumpleaños.php" class="sidebar-link">Cumpleaños</a>
+                            <a href="cumpleanos.php" class="sidebar-link">Cumpleaños</a>
                         </li>
                     </ul>
                 </li>
+
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
-                        data-bs-target="#auth" aria-expanded="false" aria-controls="auth">
-                        <i class="lni lni-calendar"></i>
-                        <span>Eventos</span>
+                    <a href="calendario_prueba.php" class="sidebar-link">
+                    <i class="lni lni-calendar"></i>
+                    <span>Empresa</span>
                     </a>
-                    <ul id="auth" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
-                        <li class="sidebar-item">
-                            <a href="calendario.php" class="sidebar-link">Empresa</a>
-                        </li>
-                    </ul>
                 </li>
+
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="capacitaciones.php" class="sidebar-link">
                         <i class="lni lni-agenda"></i>
                         <span>Capacitaciones</span>
                     </a>
                 </li>
 
-                <?php if ($_SESSION['rol'] == 5): ?>
+                <?php if ($_SESSION['admin'] == 1): ?>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#encuestas" aria-expanded="false" aria-controls="encuestas">
@@ -845,10 +868,10 @@ $conn->close();
                     <ul id="encuestas" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
                         
                     <li class="sidebar-item">
-                            <a href="encuestas_prueba.php" class="sidebar-link">Crear encuesta</a>
+                            <a href="crear_encuesta.php" class="sidebar-link">Crear encuesta</a>
                         </li>
                         <li class="sidebar-item">
-                            <a href="ver_enc_prueba.php" class="sidebar-link">Encuestas</a>
+                            <a href="encuestas.php" class="sidebar-link">Encuestas</a>
                         </li>
                         <li class="sidebar-item">
                             <a href="respuestas.php" class="sidebar-link">Respuestas de encuestas</a>
@@ -857,7 +880,7 @@ $conn->close();
                 </li>
                 <?php else: ?>
                     <li class="sidebar-item">
-                    <a href="ver_enc_prueba.php" class="sidebar-link">
+                    <a href="encuestas.php" class="sidebar-link">
                     <i class="lni lni-pencil"></i>
                     <span>Encuestas</span>
                     </a>
@@ -865,20 +888,20 @@ $conn->close();
                 <?php endif; ?>
             
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="documentos.php" class="sidebar-link">
                         <i class="lni lni-files"></i>
                         <span>Documentos</span>
                     </a>
                 </li>
 
                 <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                    <a href="foro.php" class="sidebar-link">
                     <i class="lni lni-comments"></i>
                     <span>Foro</span>
                     </a>
                 </li>
 
-                <?php if ($_SESSION['rol'] == 4 || $_SESSION['rol'] == 5): ?>
+                <?php if ($_SESSION['rol'] == 4 || $_SESSION['admin'] == 1): ?>
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#solicitudes" aria-expanded="false" aria-controls="solicitudes">
@@ -909,7 +932,7 @@ $conn->close();
                 <li class="sidebar-item">
                     <a href="#" class="sidebar-link collapsed has-dropdown" data-bs-toggle="collapse"
                         data-bs-target="#soporte" aria-expanded="false" aria-controls="soporte">
-                        <i class="lni lni-protection"></i>
+                        <i class="lni lni-cog"></i>
                         <span>Soporte Técnico</span>
                     </a>
                     <ul id="soporte" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
@@ -930,9 +953,18 @@ $conn->close();
                 </li>
             <?php endif; ?>
 
+            <?php if ($_SESSION['admin'] == 1): ?>
+            <li class="sidebar-item">
+                    <a href="estadisticas.php" class="sidebar-link">
+                    <i class="lni lni-bar-chart"></i>
+                    <span>Estadisticas</span>
+                    </a>
+            </li>
+            <?php endif; ?>
             </ul>
-            <div class="sidebar-footer">
-                <a href="#" class="sidebar-link">
+
+            <div class="sidebar-footer" style="margin-bottom: 20px;">
+                <a href="cerrar_sesion.php" class="sidebar-link">
                     <i class="lni lni-exit"></i>
                     <span>Logout</span>
                 </a>
@@ -946,15 +978,356 @@ $conn->close();
                 <div class="user-nom">
                     <i class="fas fa-user"></i> <span><?php echo $user_data['nombre']; ?></span>
                 </div>
-                <div class="navbar"><a href="#"><i class="fa-solid fa-magnifying-glass"></i></a></div>
-                <div class="user-info">
-                    <span><?php echo $usuario; ?></span>
-                    <div class="Salir"><a href="cerrar_sesion.php"><i class="fas fa-sign-out-alt"></i> Salir </a></div>
+                <div class="user-nom" style="padding: 15px;">
+                <div class="notificaciones-container">
+                    <span class="campanita" id="campanita">
+                        🔔
+                        <span class="campanita-badge" id="campanita-badge"></span>
+                    </span>
+                    <div class="notificaciones-desplegable" id="notificaciones">
+                        <div class="notificaciones-header">
+                            <h5 style="font-size: 1.4rem; margin-bottom: 3px;">📥 Notificaciones 📥</h5>
+                        </div>
+                        <div id="contenido-notificaciones">
+                            <p style="text-align: center; color: #888;">Cargando...</p>
+                        </div>
+                    </div>
                 </div>
+
                 </div>
+            </div>
         </div>
 
+        <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const campanita = document.getElementById('campanita');
+    const campanitaBadge = document.getElementById('campanita-badge');
+    const notificacionesDesplegable = document.getElementById('notificaciones');
+    const contenidoNotificaciones = document.getElementById('contenido-notificaciones');
+    let notificacionesAbiertas = false; // Bandera para rastrear si el desplegable está abierto
+
+    // Obtener notificaciones desde el servidor
+    async function obtenerNotificaciones() {
+        try {
+            const response = await fetch('notificaciones.php');
+            const notificaciones = await response.json();
+
+            contenidoNotificaciones.innerHTML = '';
+            if (notificaciones.length > 0) {
+                notificaciones.forEach(notif => {
+                    const div = document.createElement('div');
+                    div.classList.add('notificacion');
+                    div.classList.add(notif.leida === "0" ? 'no-leida' : 'leida');
+                    div.innerHTML = `
+                        <p>${notif.mensaje}</p>
+                        <div class="fecha-con-eliminar">
+                            <span class="fecha">${new Date(notif.fecha_creacion).toLocaleString()}</span>
+                            <button class="notificacion-eliminar" data-id="${notif.id}">❌</button>
+                        </div>
+                    `;
+                    contenidoNotificaciones.appendChild(div);
+                });
+
+                // Añadir eventos para los botones de eliminar
+                document.querySelectorAll('.notificacion-eliminar').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.getAttribute('data-id');
+                        const notificacion = this.closest('.notificacion'); // Obtener el contenedor de la notificación
+                        notificacion.classList.add('eliminando'); // Añadir clase de animación
+
+                        // Esperar a que termine la animación antes de eliminar
+                        setTimeout(async () => {
+                            await eliminarNotificacion(id); // Llamada para eliminar la notificación desde el backend
+                            notificacion.remove(); // Eliminar el nodo del DOM
+                        }, 300); // Espera el tiempo de la transición antes de eliminar el nodo
+                    });
+                });
+            } else {
+                contenidoNotificaciones.innerHTML = '<p style="text-align: center; color: #888;">No hay notificaciones.</p>';
+            }
+
+            // Actualizar badge
+            const nuevasNotificaciones = notificaciones.filter(notif => notif.leida === "0");
+            if (nuevasNotificaciones.length > 0) {
+                campanitaBadge.textContent = nuevasNotificaciones.length;
+                campanitaBadge.style.display = 'inline-block';
+            } else {
+                campanitaBadge.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error al obtener notificaciones:', error);
+        }
+    }
+
+    // Marcar notificaciones como leídas
+    async function marcarNotificacionesLeidas() {
+        try {
+            const response = await fetch('marcar_leidas.php', { method: 'POST' });
+            const resultado = await response.json();
+
+            if (resultado.success) {
+                // Cambiar las notificaciones a "leída"
+                document.querySelectorAll('.notificacion.no-leida').forEach(notificacion => {
+                    notificacion.classList.remove('no-leida');
+                    notificacion.classList.add('leida');
+                });
+                // Actualizar badge
+                campanitaBadge.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error al marcar como leídas:', error);
+        }
+    }
+
+    // Eliminar notificación
+    async function eliminarNotificacion(id) {
+        try {
+            const response = await fetch('notificacion_eliminar.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                // Eliminar la notificación del DOM
+                const notifElement = document.querySelector(`button[data-id="${id}"]`).closest('.notificacion');
+                notifElement.remove();
+            } else {
+                console.error('Error al eliminar la notificación');
+            }
+        } catch (error) {
+            console.error('Error al eliminar la notificación:', error);
+        }
+    }
+
+    // Alternar desplegable
+    campanita.addEventListener('click', () => {
+        notificacionesAbiertas = !notificacionesAbiertas; // Alternar estado
+
+        // Mostrar/ocultar desplegable
+        notificacionesDesplegable.classList.toggle('active');
+
+        if (!notificacionesAbiertas) {
+            // Si se cierra el desplegable, marcar como leídas
+            marcarNotificacionesLeidas();
+        }
+    });
+
+    // Consultar cada 5 segundos
+    setInterval(obtenerNotificaciones, 5000);
+
+    // Cargar al inicio
+    obtenerNotificaciones();
+});
+
+    </script>
+
         
+
+        <div class="topnav">
+        <a href="home.php" class="mr-active">Intranet</a>
+        <div id="mobileLinks">
+            <!-- Agregar elementos del menú existente -->
+            <a href="perfil.php"><i class="lni lni-user"style="margin-right: 10px;"></i>Perfil</a>
+            <?php if ($_SESSION['admin'] == 1): ?>
+                <a href="agregar_personal.php"><i class="lni lni-users"style="margin-right: 10px;"></i>Agregar Personal</a>
+                <a href="empleado_mes.php"><i class="lni lni-users"style="margin-right: 10px;"></i>Agregar Empleado del Mes</a>
+                <a href="felicitaciones_agregar.php"><i class="lni lni-users"style="margin-right: 10px;"></i>Agregar Felicitación</a>
+
+            <?php endif; ?>
+            <a href="personal_nuevo.php"><i class="lni lni-users"style="margin-right: 10px;"></i>Personal</a>
+            <a href="felicitaciones.php"><i class="lni lni-users"style="margin-right: 10px;"></i>Felicitaciones</a>
+            <a href="empleados_meses.php"><i class="lni lni-users"style="margin-right: 10px;"></i>Empleado del mes</a>
+            <a href="cumpleanos.php"><i class="lni lni-calendar"style="margin-right: 10px;"></i>Cumpleaños</a>
+            <a href="calendario_prueba.php"><i class="lni lni-calendar"style="margin-right: 10px;"></i>Eventos</a>
+            <a href="capacitaciones.php"><i class="lni lni-agenda"style="margin-right: 10px;"></i>Capacitaciones</a>
+            <a href="documentos.php"><i class="lni lni-files"style="margin-right: 10px;"></i>Documentos</a>
+            <a href="foro.php"><i class="lni lni-comments"style="margin-right: 10px;"></i>Foro</a>
+            <a href="encuestas.php"><i class="lni lni-pencil"style="margin-right: 10px;"></i>Encuestas</a>
+            <?php if ($_SESSION['admin'] == 1): ?>
+                <a href="crear_encuesta.php">Crear Encuesta</a>
+                <a href="respuestas.php">Respuestas de encuestas</a>
+            <?php endif; ?>
+            <a href="solicitudes.php"><i class="lni lni-popup" style="margin-right: 10px;"></i>Solicitudes</a>
+            <?php if ($_SESSION['admin'] == 1): ?>
+                <a href="solicitudes_usuarios.php">Ver solicitudes</a>
+            <?php endif; ?>
+            
+            <a href="soporte.php"><i class="lni lni-cog"style="margin-right: 10px;"></i>Soporte Informático</a>
+            <?php if ($_SESSION['rol'] == 4): ?>
+                <a href="soporte_def.php">ver soportes</a>
+            <?php endif; ?>
+
+            <?php if ($_SESSION['admin'] == 1): ?>
+                <a href="estadisticas.php"><i class="lni lni-bar-chart"style="margin-right: 10px;"></i>Estadisticas</a>
+                <?php endif; ?>
+
+            <a href="cerrar_sesion.php"><i class="lni lni-exit"style="margin-right: 10px;"></i>Salir</a>
+        </div>
+        <a href="javascript:void(0);" class="icon" onclick="toggleMobileMenu()">
+            <i class="fa fa-bars"></i>
+        </a>
+    </div>
+
+    <script>
+    function toggleMobileMenu() {
+        const mobileLinks = document.getElementById("mobileLinks");
+        if (mobileLinks.classList.contains("open")) {
+            mobileLinks.classList.remove("open");
+        } else {
+            mobileLinks.classList.add("open");
+        }
+    }
+    </script>
+    
+
+
+    <div class="alertas-container">
+    <span class="icono-campana" id="icono-campana">
+        🔔
+        <span class="badge-campana" id="badge-campana"></span>
+    </span>
+    <div class="alertas-desplegable" id="alertas">
+        <div class="alertas-header">
+            <h5 style="font-size: 1.4rem; margin-bottom: 3px;">📥 Alertas 📥</h5>
+        </div>
+        <div id="contenido-alertas">
+            <p style="text-align: center; color: #888;">Cargando...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const iconoCampana = document.getElementById('icono-campana');
+    const badgeCampana = document.getElementById('badge-campana');
+    const alertasDesplegable = document.getElementById('alertas');
+    const contenidoAlertas = document.getElementById('contenido-alertas');
+    let alertasAbiertas = false; // Bandera para rastrear si el desplegable está abierto
+
+    // Obtener alertas desde el servidor
+    async function obtenerAlertas() {
+        try {
+            const response = await fetch('notificaciones.php');
+            const alertas = await response.json();
+
+            contenidoAlertas.innerHTML = '';
+            if (alertas.length > 0) {
+                alertas.forEach(alerta => {
+                    const div = document.createElement('div');
+                    div.classList.add('alerta');
+                    div.classList.add(alerta.leida === "0" ? 'no-leida' : 'leida');
+                    div.innerHTML = `
+                        <p>${alerta.mensaje}</p>
+                        <div class="fecha-con-eliminar">
+                            <span class="fecha">${new Date(alerta.fecha_creacion).toLocaleString()}</span>
+                            <button class="alerta-eliminar" data-id="${alerta.id}">❌</button>
+                        </div>
+                    `;
+                    contenidoAlertas.appendChild(div);
+                });
+
+                // Añadir eventos para los botones de eliminar
+                document.querySelectorAll('.alerta-eliminar').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const id = this.getAttribute('data-id');
+                        await eliminarAlerta(id);
+                    });
+                });
+            } else {
+                contenidoAlertas.innerHTML = '<p style="text-align: center; color: #888;">No hay alertas.</p>';
+            }
+
+            // Actualizar badge
+            const nuevasAlertas = alertas.filter(alerta => alerta.leida === "0");
+            if (nuevasAlertas.length > 0) {
+                badgeCampana.textContent = nuevasAlertas.length;
+                badgeCampana.style.display = 'inline-block';
+            } else {
+                badgeCampana.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error al obtener alertas:', error);
+        }
+    }
+
+    // Marcar alertas como leídas
+    async function marcarAlertasLeidas() {
+        try {
+            const response = await fetch('marcar_leidas.php', { method: 'POST' });
+            const resultado = await response.json();
+
+            if (resultado.success) {
+                // Cambiar las alertas a "leída"
+                document.querySelectorAll('.alerta.no-leida').forEach(alerta => {
+                    alerta.classList.remove('no-leida');
+                    alerta.classList.add('leida');
+                });
+                // Actualizar badge
+                badgeCampana.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error al marcar como leídas:', error);
+        }
+    }
+
+    // Eliminar alerta
+        async function eliminarAlerta(id) {
+            try {
+                const response = await fetch('notificacion_eliminar.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: id })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    // Buscar la alerta y añadir la clase de animación
+                    const alertaElement = document.querySelector(`button[data-id="${id}"]`).closest('.alerta');
+                    alertaElement.classList.add('eliminando'); // Añadir clase de animación
+
+                    // Esperar a que termine la animación antes de eliminar
+                    setTimeout(() => {
+                        alertaElement.remove(); // Eliminar el nodo del DOM
+                    }, 300); // Esperar el tiempo de la transición antes de eliminar el nodo
+                } else {
+                    console.error('Error al eliminar la alerta');
+                }
+            } catch (error) {
+                console.error('Error al eliminar la alerta:', error);
+            }
+        }
+
+    // Alternar desplegable
+    iconoCampana.addEventListener('click', () => {
+        alertasAbiertas = !alertasAbiertas; // Alternar estado
+
+        // Mostrar/ocultar desplegable
+        alertasDesplegable.classList.toggle('active');
+
+        if (!alertasAbiertas) {
+            // Si se cierra el desplegable, marcar como leídas
+            marcarAlertasLeidas();
+        }
+    });
+
+    // Consultar cada 5 segundos
+    setInterval(obtenerAlertas, 1000);
+
+    // Cargar al inicio
+    obtenerAlertas();
+});
+</script>
+
+
+
+
+
         <div class="sliderimages">
         <div id="carouselExampleCaptions" class="carousel slide" data-bs-ride="carousel">
             <div class="carousel-indicators">
@@ -1006,18 +1379,18 @@ $conn->close();
         </div>
 
         <div class="titulo-home">
-            <h2 style="width: 100%; text-align: center; margin-top: 20px;">Nuestro Empleado del Mes</h2>
-            <p>Queremos honorar a nuestro empleado mas activo en el mes, destacando y colabrondo mucho </p>
-            <p>para empresa como con sus compañeros!</p>
+            <h2 style="width: 100%; text-align: center; margin-top: 20px;">Nuestro Empleado del Año</h2>
+            <p>Queremos honorar a nuestro empleado mas reconocido en el año, destacando y colabrondo mucho </p>
+            <p>para clínica como con sus compañeros!</p>
         </div>
 
         <div class="titulo-home">
-        <h2 style="width: 100%; text-align: center; margin-top: 20px;">Empleado del Mes - <?php echo traducir_mes(date('F Y')); ?></h2>
+        <h2 style="width: 100%; text-align: center; margin-top: 20px;">Empleado del Año - <?php echo traducir_mes(date('F Y')); ?></h2>
         
         </div>
-    <div class="empleado-mes-card">
+    <div class="empleado-mes-card" style="margin-bottom: 0px;">
 
-    <div class="card-emp-mes" style="height: 250px;">
+    <div class="card-emp-mes" style="height: 200px;">
     <?php
 // Incluir la conexión a la base de datos
 include("conexion.php");
@@ -1026,7 +1399,7 @@ include("conexion.php");
 $carpeta_fotos = 'Images/fotos_personal/';
 $imagen_default = 'Images/profile_photo/imagen_default.jpg';
 
-/// Obtener el mes y año actuales
+// Obtener el mes y año actuales
 $mes_actual = date('m'); // Mes actual
 $año_actual = date('Y');  // Año actual
 
@@ -1037,45 +1410,45 @@ $query_emp_mes = "SELECT p.nombre, p.imagen, em.descripcion, c.NOMBRE_CARGO
           JOIN cargos c ON p.cargo_id = c.id
           WHERE MONTH(em.mes_year) = '$mes_actual' AND YEAR(em.mes_year) = '$año_actual'
           LIMIT 1";
-          
-
 
 // Ejecutar la consulta
 $result_emp_mes = $conn->query($query_emp_mes);
 
 // Si no hay resultados, buscar el empleado del mes anterior
 if ($result_emp_mes->num_rows == 0) {
-    // Obtener el mes anterior en formato 'Y-m-01' (primer día del mes anterior)
-    // Obtener el mes anterior y año
-$mes_anterior = date('m', strtotime('first day of -1 month'));
-$año_anterior = date('Y', strtotime('first day of -1 month'));
+    $mes_anterior = date('m', strtotime('first day of -1 month'));
+    $año_anterior = date('Y', strtotime('first day of -1 month'));
 
-// Consulta para obtener el empleado del mes anterior
-$query_emp_mes_anterior = "SELECT p.nombre, p.imagen, em.descripcion, c.NOMBRE_CARGO
-          FROM empleado_mes em 
-          JOIN personal p ON em.rut = p.rut 
-          JOIN cargos c ON p.cargo_id = c.id
-          WHERE MONTH(em.mes_year) = '$mes_anterior' AND YEAR(em.mes_year) = '$año_anterior'
-          LIMIT 1";
-
-  
+    // Consulta para obtener el empleado del mes anterior
+    $query_emp_mes_anterior = "SELECT p.nombre, p.imagen, em.descripcion, c.NOMBRE_CARGO
+              FROM empleado_mes em 
+              JOIN personal p ON em.rut = p.rut 
+              JOIN cargos c ON p.cargo_id = c.id
+              WHERE MONTH(em.mes_year) = '$mes_anterior' AND YEAR(em.mes_year) = '$año_anterior'
+              LIMIT 1";
 
     // Ejecutar la consulta para el mes anterior
     $result_emp_mes = $conn->query($query_emp_mes_anterior);
 
     // Si tampoco hay empleado del mes anterior
     if ($result_emp_mes->num_rows == 0) {
-        echo "<p>No hay empleado del mes registrado para este mes ni para el mes anterior.</p>";
+        // Mostrar una tarjeta con el mensaje de que no hay empleados del mes
+        echo "
+        <div class='card' style='height: 505px;'>
+            <div class='card-body'>
+                <h3 class='text-center'>No hay empleado del año registrado</h3>
+                <p class='text-center'>No se encontró empleado del año para este mes ni para el mes anterior.</p>
+            </div>
+        </div>";
     } else {
         // Mostrar el empleado del mes anterior
         $empleado_mes = $result_emp_mes->fetch_assoc();
         $img_emp_mes = $carpeta_fotos . $empleado_mes['imagen'];
         $img_emp_mes = file_exists($img_emp_mes) ? $img_emp_mes : $imagen_default;
 
-        // Mostrar la información del empleado del mes anterior
         echo "
-        <div class='card'>
-            <h3>Empleado del Mes Anterior</h3>
+        <div class='card' style='height: 505px;'>
+            <h3>Empleado del Año Anterior</h3>
             <img src='$img_emp_mes' alt='" . $empleado_mes['nombre'] . "' class='empleado-mes-imagen'>
             <h3 class='empleado-mes-nombre'>" . $empleado_mes['nombre'] . "</h3>
             <div class='card-body'>
@@ -1085,14 +1458,13 @@ $query_emp_mes_anterior = "SELECT p.nombre, p.imagen, em.descripcion, c.NOMBRE_C
         </div>";
     }
 } else {
-    // Si hay empleado del mes actual, mostrarlo
+    // Si hay Empleado del Año actual, mostrarlo
     $empleado_mes = $result_emp_mes->fetch_assoc();
     $img_emp_mes = $carpeta_fotos . $empleado_mes['imagen'];
     $img_emp_mes = file_exists($img_emp_mes) ? $img_emp_mes : $imagen_default;
 
-    // Mostrar la información del empleado del mes actual
     echo "
-    <div class='card'>
+    <div class='card' style='height: 505px;'>
         <img src='$img_emp_mes' alt='" . $empleado_mes['nombre'] . "' class='empleado-mes-imagen'>
         <h3 class='empleado-mes-nombre'>" . $empleado_mes['nombre'] . "</h3>
         <div class='card-body'>
@@ -1102,24 +1474,25 @@ $query_emp_mes_anterior = "SELECT p.nombre, p.imagen, em.descripcion, c.NOMBRE_C
     </div>";
 }
 
+
 // Cerrar la conexión a la base de datos
-$conn->close();
+
 ?>
 </div>
 
 
 <!-- Contenedor de las tarjetas de cumpleaños -->
-<div class="birthday-list-box1" style="justify-content: center;
+<div class="birthday-list-box" id="#cumpleaños" style="justify-content: center;
         align-items: center ;">
         <h4 >Cumpleaños de este mes</h4>
         <div id="birthday-list"><?php echo $cards_html_cum; ?></div> <!-- Aquí se cargarán las tarjetas dinámicamente -->
         </div>
 </div>
     
-<div class="titulo-home">
+<div class="titulo-home" style="margin-top: 50px;">
             <h2 style="width: 100%; text-align: center; margin-top: 20px;">Eventos y Capacitaciones</h2>
-            <p>Estos son los eventos y las capacitaciones del mes pendientes, si quieres ver eventos </p>
-            <p>pasados, puedes acceder al portal respectivo!</p>
+            <p>Estos son los eventos y las capacitaciones del mes pendientes, si quieres ver eventos pasados, puedes acceder al portal respectivo!</p>
+            
         </div>
 
 <div class="empleado-mes-card">
@@ -1141,61 +1514,243 @@ $conn->close();
     
 </div>
 
-<div class="empleado-mes-card" style="display: block;">
-    
-<?php
-        // Verificar si hay resultados y mostrar el contenido solo si existen usuarios nuevos
-        if ($result_nuevos->num_rows > 0) {
-            ?>
-            <div class="titulo-home">
-                <h4 style="font-size: 2rem;">Usuarios Nuevos de este Mes</h4>
-                <p style="margin-bottom: 0px;">le damos la bienvenida a nuestros nuevo personal que se ha sumado a la clinica!</p>
-            </div>
-        <!-- Contenedor principal del perfil -->
-            <div class="body-cards">
-                <div class="slide-container swiper"  style="padding-top: 0px;">
-                    <div class="slide-content cards-new-employees" >
-                        <div class="cards-new-employees-wrapper swiper-wrapper" style="">
-                        <?php
-                        while ($nuevo_user = $result_nuevos->fetch_assoc()) {
-                            // Ruta de la imagen del usuario nuevo
-                            $ruta_imagen_nuevo = $carpeta_fotos . $nuevo_user['imagen'];
-                            
-                            // Verificar si la imagen del usuario nuevo existe
-                            $imagen_usuario_nuevo = file_exists($ruta_imagen_nuevo) ? $ruta_imagen_nuevo : $imagen_default;
-                            ?>  
-                            <div class="cards-new-employees-card swiper-slide">
-                                <div class="image-content cards-new-employees-image">
-                                    <span class="overlay cards-new-employees-overlay"></span>
-                                    <div class="cards-new-employees-image-wrapper">
-                                        <img src="<?php echo $imagen_usuario_nuevo; ?>" class="profile-picture-nuevo" alt="Foto de Perfil">
-                                    </div>
-                                </div>
-                                <div class="cards-new-employees-content">
-                                    <h2 class="cards-new-employees-name" style="font-size: 20px;"><?php echo $nuevo_user['nombre']; ?></h2>
-                                    <p class="cards-new-employees-description"><strong>Fecha de Nacimiento:</strong> <?php echo traducir_fecha($nuevo_user['fecha_nacimiento']); ?></p>
-                                    <p class="cards-new-employees-description"><strong>Cargo:</strong> <?php echo $nuevo_user['NOMBRE_CARGO']; ?></p>
-                                    <p class="cards-new-employees-description"><strong>Fecha de Ingreso:</strong> <?php echo traducir_fecha($nuevo_user['fecha_creacion']); ?></p>
+<div class="empleado-mes-card" id="empleados-nuevos" style="display: block; width:100%; margin-bottom: 0px !important; padding-bottom: 0px !important;">
 
-                                    <button class="cards-new-employees-button">¡Bienvenido!</button>
+<?php
+// Verificar si hay resultados y mostrar el contenido solo si existen usuarios nuevos
+
+// Consulta para obtener felicitaciones del mes actual
+$sql_felicitaciones = "SELECT p.nombre, p.imagen, em.descripcion, c.NOMBRE_CARGO
+          FROM felicitaciones em 
+          JOIN personal p ON em.rut = p.rut 
+          JOIN cargos c ON p.cargo_id = c.id
+          WHERE MONTH(em.mes_year) = ? AND YEAR(em.mes_year) = ?";
+
+$stmt_felicitacion = $conn->prepare($sql_felicitaciones);
+$stmt_felicitacion->bind_param('ii', $mes_actual, $año_actual);
+$stmt_felicitacion->execute();
+$result_felicitacion = $stmt_felicitacion->get_result();
+
+if ($result_felicitacion->num_rows > 0) {
+    ?>
+    <div class="titulo-home">
+        <h4 style="font-size: 2rem;">Felicitaciones de Personal</h4>
+        <p style="margin-bottom: 0px;">Le queremos dar las felicitaciones a estos colaboradores de la clínica los cuales se merecen el reconocimiento por su trabajo!</p>
+    </div>
+    <!-- Contenedor principal del perfil -->
+    <div class="body-cards">
+        <div class="slide-container swiper" style="padding-top: 0px;">
+            <div class="slide-content cards-new-employees">
+                <!-- Ajustar el estilo dinámicamente según el número de registros -->
+                <div class="cards-new-employees-wrapper swiper-wrapper <?php echo ($result_felicitacion->num_rows < 3) ? 'center' : ''; ?>">
+                    <?php
+                    while ($nuevo_user = $result_felicitacion->fetch_assoc()) {
+                        // Ruta de la imagen del usuario nuevo
+                        $ruta_imagen_nuevo = $carpeta_fotos . $nuevo_user['imagen'];
+                        
+                        // Verificar si la imagen del usuario nuevo existe
+                        $imagen_usuario_nuevo = file_exists($ruta_imagen_nuevo) ? $ruta_imagen_nuevo : $imagen_default;
+                        // Obtener el nombre completo del usuario logeado
+                        $nombre_usuario = $_SESSION['nombre'];  // Nombre completo de la persona logeada (quien va a dar la bienvenida)
+
+                        // Asegurarnos de que $nuevo_user contiene los datos del nuevo usuario
+                        $nombre_nuevo_usuario = $nuevo_user['nombre'];  // Nombre del nuevo usuario     
+                        ?>
+                        <div class="cards-new-employees-card swiper-slide">
+                            <div class="image-content cards-new-employees-image">
+                                <span class="overlay cards-new-employees-overlay"></span>
+                                <div class="cards-new-employees-image-wrapper">
+                                    <img src="<?php echo $imagen_usuario_nuevo; ?>" class="profile-picture-nuevo" alt="Foto de Perfil">
                                 </div>
                             </div>
-                            <?php
-                        }
-                        ?>
+                            <div class="cards-new-employees-content" style="overflow: auto; scrollbar-width: none; ">
+                                <h2 class="cards-new-employees-name" style="font-size: 18px; margin-bottom: 10px; ">¡Muchas Gracias!</h2>
+                                <h2 class="cards-new-employees-name" style="font-size: 20px;  margin-bottom: 10px; color: #0056b3;"><?php echo $nuevo_user['nombre']; ?></h2>
+                            
+                                <p class="cards-new-employees-description"><strong>Cargo:</strong> <?php echo $nuevo_user['NOMBRE_CARGO']; ?></p>
+                                <p class="cards-new-employees-description"><strong>Descripcion:</strong> <?php echo $nuevo_user['descripcion']; ?></p>
+                               
+                            </div>
                         </div>
-                        <div class="swiper-button-next swiper-navBtn"></div>
-    <div class="swiper-button-prev swiper-navBtn"></div>
-    <div class="swiper-pagination"></div>
-                    </div>
+                        <?php
+                    }
+                    ?>
                 </div>
+                <div class="swiper-button-next swiper-navBtn"></div>
+                <div class="swiper-button-prev swiper-navBtn"></div>
+                <div class="swiper-pagination"></div>
             </div>
-            
-            <?php
-        }
-        ?>
+        </div>
+    </div>
+
+    <?php
+}
+?>
+
+</div>
+
+
+<div class="empleado-mes-card" id="empleados-nuevos" style="display: block; width:100%; margin-top: 0px !important;">
     
-  </div>
+<?php
+
+// Verificar si hay resultados y mostrar el contenido solo si existen usuarios nuevos
+if ($result_nuevos->num_rows > 0) {
+    ?>
+    <div class="titulo-home">
+        <h4 style="font-size: 2rem;">Usuarios Nuevos de este Mes</h4>
+        <p style="margin-bottom: 0px;">Le damos la bienvenida a nuestro nuevo personal que se ha sumado a la clínica!</p>
+    </div>
+    <!-- Contenedor principal del perfil -->
+    <div class="body-cards">
+        <div class="slide-container swiper" style="padding-top: 0px;">
+            <div class="slide-content cards-new-employees">
+            <div class="cards-new-employees-wrapper swiper-wrapper <?php echo ($result_nuevos->num_rows < 3) ? 'center' : ''; ?>">
+            <?php
+                    while ($nuevo_user = $result_nuevos->fetch_assoc()) {
+                        // Ruta de la imagen del usuario nuevo
+                        $ruta_imagen_nuevo = $carpeta_fotos . $nuevo_user['imagen'];
+                        
+                        // Verificar si la imagen del usuario nuevo existe
+                        $imagen_usuario_nuevo = file_exists($ruta_imagen_nuevo) ? $ruta_imagen_nuevo : $imagen_default;
+                       // Obtener el nombre completo del usuario logeado
+                        $nombre_usuario = $_SESSION['nombre'];  // Nombre completo de la persona logeada (quien va a dar la bienvenida)
+
+                        // Asegurarnos de que $nuevo_user contiene los datos del nuevo usuario
+                        $rut_usuario = $nuevo_user['rut'];
+                        $nombre_nuevo_usuario = $nuevo_user['nombre'];  // Nombre del nuevo usuario
+
+                        // Verificamos si ya existe una notificación de bienvenida para este usuario
+                        $query_check = "SELECT * FROM notificaciones WHERE rut = ? AND mensaje LIKE ?";
+                        $stmt_check = $conn->prepare($query_check);
+                        $mensaje_bienvenida = "El usuario " . $nombre_usuario . " le dio la bienvenida."; // El mensaje debe ser exactamente como se almacenará
+
+                        // Buscamos en la base de datos si ya existe este mensaje para el nuevo usuario
+                        $stmt_check->bind_param("ss", $rut_usuario, $mensaje_bienvenida);
+                        $stmt_check->execute();
+                        $result_check = $stmt_check->get_result();
+
+                        $mostrar_boton = ($result_check->num_rows == 0);  // Si no hay notificación, mostramos el botón
+
+                        $stmt_check->close();
+                        
+                        ?>
+                        <div class="cards-new-employees-card swiper-slide">
+                            <div class="image-content cards-new-employees-image">
+                                <span class="overlay cards-new-employees-overlay"></span>
+                                <div class="cards-new-employees-image-wrapper">
+                                    <img src="<?php echo $imagen_usuario_nuevo; ?>" class="profile-picture-nuevo" alt="Foto de Perfil">
+                                </div>
+                            </div>
+                            <div class="cards-new-employees-content">
+                                <h2 class="cards-new-employees-name" style="font-size: 20px;"><?php echo $nuevo_user['nombre']; ?></h2>
+                                <p class="cards-new-employees-description"><strong>Fecha de Nacimiento:</strong> <?php echo traducir_fecha($nuevo_user['fecha_nacimiento']); ?></p>
+                                <p class="cards-new-employees-description"><strong>Cargo:</strong> <?php echo $nuevo_user['NOMBRE_CARGO']; ?></p>
+                                <p class="cards-new-employees-description"><strong>Fecha de Ingreso:</strong> <?php echo traducir_fecha($nuevo_user['fecha_creacion']); ?></p>
+                                
+                                <!-- Botón para dar la bienvenida -->
+                                <?php if ($mostrar_boton): ?>
+                                    <button type="button" class="cards-new-employees-button btn-bienvenida" 
+                                        onclick="darBienvenida('<?php echo $nuevo_user['rut']; ?>', '<?php echo $_SESSION['nombre']; ?>', 'home.php')">
+                                        ¡Bienvenido!
+                                    </button>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <?php
+                    }
+                    ?>
+                </div>
+                <div class="swiper-button-next swiper-navBtn"></div>
+                <div class="swiper-button-prev swiper-navBtn"></div>
+                <div class="swiper-pagination"></div>
+            </div>
+        </div>
+    </div>
+
+    <?php
+}
+?>
+    
+</div>
+
+<!-- Incluir SweetAlert -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+// Función para enviar la notificación de cumpleaños
+function saludarCumple(rutCumpleanero, nombreCumpleanero) {
+    // Mensaje personalizado
+    var nombreUsuario = "<?php echo $_SESSION['nombre']; ?>"; // Usuario logeado
+    var mensaje = "🎂El usuario " + nombreUsuario + " te ha deseado un feliz cumpleaños.🎂";
+
+    // Mostrar una alerta de confirmación antes de enviar la notificación
+    Swal.fire({
+        icon: 'info',
+        title: '¿Deseas enviarle un saludo?',
+        text: '¡Esta acción notificará a ' + nombreCumpleanero + '!',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, saludar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Enviar la notificación vía AJAX
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "insertar_notificacion.php", true);
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Saludo enviado!',
+                        text: 'Tu saludo ha sido enviado a ' + nombreCumpleanero + '.',
+                        timer: 1500
+                    });
+                    // Desaparecer el botón después de dar la bienvenida
+                    var boton = document.querySelector('.greet-btn');
+                    boton.style.display = 'none'; // Oculta el botón
+                }
+            };
+            xhr.send("rut_usuario=" + rutCumpleanero + "&mensaje=" + encodeURIComponent(mensaje));
+        }
+    });
+}
+</script>
+
+<script>
+// Función para dar la bienvenida y enviar la notificación
+function darBienvenida(rutUsuario, nombreUsuario) {
+    // Mostrar SweetAlert con la notificación
+    Swal.fire({
+        icon: 'success',
+        title: '¡Bienvenido!',
+        text: 'Le has dado la bienvenida al nuevo usuario.',
+        showConfirmButton: false,
+        timer: 1500
+    }).then(() => {
+        // Realizar la petición para insertar la notificación
+        var mensaje = "El usuario " + nombreUsuario + " le dio la bienvenida.";
+        
+        // Hacer la solicitud AJAX para insertar la notificación
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "insertar_notificacion.php", true);
+        xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                // Redirigir a la sección de empleados nuevos después de insertar la notificación
+                window.location.href = "home.php#empleados-nuevos";
+                
+                // Desaparecer el botón después de dar la bienvenida
+                var boton = document.querySelector('.btn-bienvenida');
+                boton.style.display = 'none'; // Oculta el botón
+            }
+        };
+        xhr.send("rut_usuario=" + rutUsuario + "&mensaje=" + encodeURIComponent(mensaje));
+    });
+}
+</script>
+
+
 
 <!-- Agrega este script en tu HTML, preferentemente al final del cuerpo (body) -->
 <footer class="footer">
@@ -1236,13 +1791,13 @@ $conn->close();
         crossorigin="anonymous"></script>
     <script src="scripts/script_nav_home.js"></script>
 
-        
-</body>
-
 <!-- Swiper JS -->
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <!-- JavaScript -->
 <script src="scripts/script_new_cards.js"></script>
+</body>
+
+
 
 </html>

@@ -2,6 +2,7 @@
 include("conexion.php");
 session_start();
 
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $solicitud_id = $_POST['solicitud_id'];  // ID de la solicitud que se está respondiendo
     $respuesta_texto = isset($_POST['respuesta_texto']) ? $_POST['respuesta_texto'] : '';
@@ -37,32 +38,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         // Mover el archivo al directorio del usuario
         if (move_uploaded_file($archivo['tmp_name'], $archivo_subido)) {
-            echo "El archivo ha sido subido correctamente.";
+            // No es necesario hacer echo de los mensajes, ya que redirigiremos luego
         } else {
             echo "Hubo un error al subir el archivo.";
+            exit();
         }
+
     }
 
     // Guardar la respuesta en la base de datos
-    $rut_usuario = $_SESSION['rut']; // El RUT del usuario que responde la solicitud
-    $fecha_respuesta = date('Y-m-d H:i:s'); // Fecha y hora actual
+    $rut_usuario = $_SESSION['rut'];
+    $fecha_respuesta = date('Y-m-d H:i:s');
 
-    // Insertar la respuesta en la tabla de respuestas, vinculando el RUT del usuario y la solicitud
+    // Insertar la respuesta en la base de datos
     $sql = "INSERT INTO soli_respuestas (solicitud_id, rut_usuario, respuesta_texto, archivo, fecha_respuesta) 
             VALUES (?, ?, ?, ?, ?)";
-
     $stmt = $conn->prepare($sql);
     $stmt->bind_param('issss', $solicitud_id, $rut_usuario, $respuesta_texto, $archivo_subido, $fecha_respuesta);
 
     if ($stmt->execute()) {
-        echo "Respuesta guardada con éxito.";
+        $mensaje = "📑¡Solicitud Respondida!📑 Han respondido correctamente tu solicitud, entra al portal de respuestas para visualizarla!";
+        $query = "
+            INSERT INTO notificaciones (rut, mensaje, fecha_creacion)
+            VALUES (?, ?, NOW())
+        ";
+    
+        // Preparamos la consulta
+        $stmt = $conn->prepare($query);
+    
+        // Verificamos si la preparación fue exitosa
+        if ($stmt) {
+            // Vinculamos los parámetros
+            $stmt->bind_param("ss", $rut_solicitante, $mensaje); // 'ss' indica que ambos son cadenas
+    
+            // Ejecutamos la consulta
+            if ($stmt->execute()) {
+            } 
+        } else {
+        }
+      
+        // Después de guardar, redirigimos a la página correspondiente
+        header("Location: solicitudes_usuarios.php");
+        exit();
     } else {
         echo "Error al guardar la respuesta: " . $stmt->error;
     }
-
-    // Redirigir a la página de solicitudes
-    header("Location: solicitudes_usuarios.php");
-    exit();
 }
 
 $conn->close();

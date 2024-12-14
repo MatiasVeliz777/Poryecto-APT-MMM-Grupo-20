@@ -1,6 +1,7 @@
 <?php
 include('conexion.php');
 
+
 // Obtener el día, mes y año actuales
 $dia_actual = date('d');
 $mes_actual = date('m');
@@ -26,7 +27,7 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 
 // Consulta para obtener las tarjetas de empleados con cumpleaños del mes seleccionado
-$sql_tarjetas_cumple = "SELECT nombre, fecha_nacimiento, imagen FROM personal WHERE MONTH(fecha_nacimiento) = ? ORDER BY DAY(fecha_nacimiento) ASC";
+$sql_tarjetas_cumple = "SELECT nombre, fecha_nacimiento, imagen, rut FROM personal WHERE MONTH(fecha_nacimiento) = ? ORDER BY DAY(fecha_nacimiento) ASC";
 $stmt_tarjetas_cumple = $conn->prepare($sql_tarjetas_cumple);
 $stmt_tarjetas_cumple->bind_param("i", $mes);
 $stmt_tarjetas_cumple->execute();
@@ -58,30 +59,24 @@ function traducir_mes($fecha){
 // Generar el HTML de las tarjetas de cumpleaños
 $cards_html = '';
 while ($row = $result_tarjetas_cumple->fetch_assoc()) {
-    // Definir el día del cumpleaños con ceros a la izquierda
     $dia_nacimiento = str_pad(date('d', strtotime($row['fecha_nacimiento'])), 2, "0", STR_PAD_LEFT);
     $mes_nacimiento = str_pad(date('m', strtotime($row['fecha_nacimiento'])), 2, "0", STR_PAD_LEFT);
 
-    // Ruta de la carpeta donde están las imágenes de perfil
     $carpeta_fotos = 'Images/fotos_personal/';
     $imagen_default = 'Images/profile_photo/imagen_default.jpg';
 
-    // Obtener el nombre del archivo de imagen desde la base de datos
     $nombre_imagen = $row['imagen'];
-
-    // Construir la ruta completa de la imagen del usuario
     $ruta_imagen_usuario = $carpeta_fotos . $nombre_imagen;
-    if (file_exists($ruta_imagen_usuario)) {
-        $imagen_final = $ruta_imagen_usuario;
-    } else {
-        $imagen_final = $imagen_default;
-    }
+    $imagen_final = file_exists($ruta_imagen_usuario) ? $ruta_imagen_usuario : $imagen_default;
 
     $imagen = $imagen_final;
     $nombre = htmlspecialchars($row['nombre']);
-    $fecha = traducir_mes($row['fecha_nacimiento']);  // Traducir la fecha
+    $fecha = traducir_mes($row['fecha_nacimiento']);
 
-    // Generar el HTML de la tarjeta de cumpleaños con un id único con dos dígitos
+    // Datos del usuario
+    $rut_usuario = htmlspecialchars($row['rut']);
+    $nombre = htmlspecialchars($row['nombre']);
+
     $cards_html .= "
     <div id='birthday-$dia_nacimiento' class='birthday-card'>
         <img src='$imagen' alt='Foto de $nombre'>
@@ -89,14 +84,13 @@ while ($row = $result_tarjetas_cumple->fetch_assoc()) {
             <h5>🎂$nombre</h5>
             <p>$fecha</p>";
 
-    // Mostrar el botón solo si el empleado está cumpliendo años hoy
+    // Mostrar el botón solo si es su cumpleaños hoy
     if ($dia_nacimiento == $dia_actual && $mes_nacimiento == $mes_actual) {
-        $cards_html .= "<button class='greet-btn'>Saludarlo en su día</button>";
+        $cards_html .= "
+            <button class='greet-btn' onclick=\"saludarCumple('$rut_usuario', '$nombre')\">Saludarlo en su día</button>";
     }
 
-    $cards_html .= "
-        </div>
-    </div>";
+    $cards_html .= "</div></div>";
 }
 
 $stmt_tarjetas_cumple->close();

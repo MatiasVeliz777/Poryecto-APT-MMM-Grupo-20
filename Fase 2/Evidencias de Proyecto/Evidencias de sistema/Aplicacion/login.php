@@ -7,10 +7,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Verifica si se están recibiendo los campos correctos
     if (isset($_POST['usuario']) && isset($_POST['password'])) {
-        $usuario = $_POST['usuario'];
+        $usuario = strtoupper($_POST['usuario']);
         // Encriptamos la contraseña usando SHA2 con 256 bits
-        $contrasena = hash('sha256', $_POST['password']); 
-
+        $contrasena = hash('sha256', strtoupper($_POST['password'])); 
+        
         // Primera consulta para verificar si el usuario existe
         $sql = "SELECT * FROM usuarios WHERE nombre_usuario='$usuario'";
         $result = $conn->query($sql);
@@ -23,6 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($user['activo'] == 1) {
                     // Login exitoso
                     $_SESSION['usuario'] = $usuario;
+                    $_SESSION['clave_cambiada'] = $user['clave_cambiada'];
+                    
                     header('location: home.php');
                     exit();
                 } else {
