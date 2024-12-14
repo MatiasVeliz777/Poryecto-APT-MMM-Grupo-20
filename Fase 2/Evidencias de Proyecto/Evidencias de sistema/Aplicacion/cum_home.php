@@ -15,7 +15,7 @@ $year_actual_cum = date('Y');
 // Verificar si estamos en el mes y año actual, para filtrar los días ya pasados
 if ($mes == $mes_actual_cum && $year == $year_actual_cum) {
     // Mostrar solo los cumpleaños que aún no han pasado
-    $sql_tarjetas_cumple = "SELECT nombre, fecha_nacimiento, imagen 
+    $sql_tarjetas_cumple = "SELECT nombre, fecha_nacimiento, imagen, rut
                             FROM personal 
                             WHERE MONTH(fecha_nacimiento) = ? 
                             AND DAY(fecha_nacimiento) >= ? 

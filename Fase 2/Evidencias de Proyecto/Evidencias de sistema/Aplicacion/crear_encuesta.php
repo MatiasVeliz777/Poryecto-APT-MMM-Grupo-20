@@ -1,8 +1,9 @@
 <?php
-// Conectar a la base de datos
-include('conexion.php');
-
+include('conexion.php'); // Conexión a la base de datos
 session_start();
+
+$rut_usuario = $_SESSION['rut']; // RUT del usuario autenticado
+
 
 // Verificar si el usuario ha iniciado sesión
 if (!isset($_SESSION['usuario'])) {
@@ -11,7 +12,6 @@ if (!isset($_SESSION['usuario'])) {
 }
 
 $error = "";
-include("conexion.php");
 
 // Obtener el usuario que ha iniciado sesión
 $usuario = $_SESSION['usuario'];
@@ -19,7 +19,7 @@ $usuario = $_SESSION['usuario'];
 // Consultar los datos del empleado en la tabla 'personal'
 $sql = "SELECT rut, nombre, correo, imagen, fecha_nacimiento, cargo_id, rol_id, admin
         FROM personal 
-        WHERE rut = (SELECT rut FROM usuarios WHERE nombre_usuario = '$usuario')";;
+        WHERE rut = (SELECT rut FROM usuarios WHERE nombre_usuario = '$usuario')";
 $result = $conn->query($sql);
 
 // Verificar si se encontró el usuario
@@ -40,10 +40,8 @@ if ($result->num_rows > 0) {
     $error = "No se encontraron datos para el usuario.";
 }
 
-
-
+// Consultar el cargo del usuario
 $sql_cargo = "SELECT NOMBRE_CARGO FROM cargos WHERE id = '" . $user_data['cargo_id'] . "'";
-
 $result_cargo = $conn->query($sql_cargo);
 
 if ($result_cargo->num_rows > 0) {
@@ -52,50 +50,7 @@ if ($result_cargo->num_rows > 0) {
     $error = "No se encontraron datos para el cargo.";
 }
 
-// Verificar si se ha proporcionado un evento_id
-if (isset($_GET['evento_id'])) {
-    $evento_id = intval($_GET['evento_id']);
-    
-    // Obtener los detalles del evento
-    $evento_sql = "SELECT titulo, fecha, hora, ubicacion FROM eventos WHERE id = ?";
-    $stmt_evento = $conn->prepare($evento_sql);
-    $stmt_evento->bind_param("i", $evento_id);
-    $stmt_evento->execute();
-    $result_evento = $stmt_evento->get_result();
 
-    if ($result_evento->num_rows > 0) {
-        $evento = $result_evento->fetch_assoc();
-    } else {
-        echo "Evento no encontrado.";
-        exit();
-    }
-
-    // Obtener los asistentes al evento
-    $asistentes_sql = "SELECT p.nombre, p.rut, p.imagen, a.rut_usuario FROM asistencias_eventos a
-                       JOIN personal p ON a.rut_usuario = p.rut
-                       WHERE a.evento_id = ?";
-    $stmt_asistentes = $conn->prepare($asistentes_sql);
-    $stmt_asistentes->bind_param("i", $evento_id);
-    $stmt_asistentes->execute();
-    $result_asistentes = $stmt_asistentes->get_result();
-} else {
-    echo "No se ha especificado un evento.";
-    exit();
-}
-
-function traducir_mes($fecha) {
-    $meses = array(
-        "January" => "Enero", "February" => "Febrero", "March" => "Marzo", 
-        "April" => "Abril", "May" => "Mayo", "June" => "Junio", 
-        "July" => "Julio", "August" => "Agosto", "September" => "Septiembre", 
-        "October" => "Octubre", "November" => "Noviembre", "December" => "Diciembre"
-    );
-    
-    $mes_nombre = $meses[date('F', strtotime($fecha))];
-    $anio = date('Y', strtotime($fecha));
-    
-    return "$mes_nombre de $anio";
-}
 // Ruta de la carpeta donde están las imágenes de perfil
 $carpeta_fotos = 'Images/fotos_personal/'; // Cambia esta ruta a la carpeta donde están tus fotos
 $imagen_default = 'Images/profile_photo/imagen_default.jpg'; // Ruta de la imagen predeterminada
@@ -115,55 +70,73 @@ if (file_exists($ruta_imagen_usuario)) {
     $imagen_final = $imagen_default;
 }
 
-function traducir_fecha($fecha){
-    $dias = array("Sunday" => "Domingo", "Monday" => "Lunes", "Tuesday" => "Martes", 
-                  "Wednesday" => "Miércoles", "Thursday" => "Jueves", 
-                  "Friday" => "Viernes", "Saturday" => "Sábado");
-    
-    $meses = array("January" => "Enero", "February" => "Febrero", "March" => "Marzo", 
-                   "April" => "Abril", "May" => "Mayo", "June" => "Junio", 
-                   "July" => "Julio", "August" => "Agosto", "September" => "Septiembre", 
-                   "October" => "Octubre", "November" => "Noviembre", "December" => "Diciembre");
-    
-    $dia_nombre = $dias[date('l', strtotime($fecha))];
-    $dia_numero = date('d', strtotime($fecha));
-    $mes_nombre = $meses[date('F', strtotime($fecha))];
-    $anio = date('Y', strtotime($fecha));
-    
-    return " $dia_numero de $mes_nombre de $anio";
+// Procesar la solicitud cuando se envía el formulario
+$solicitudEnviada = false;
+$errorAlGuardar = false; // Variable para manejar los errores
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $pregunta = $_POST['pregunta'] ?? '';
+    $tipo_pregunta = $_POST['tipo_pregunta'] ?? '';
+
+    if (!empty($pregunta) && !empty($tipo_pregunta)) {
+        // Insertar la pregunta
+        $stmt = $conn->prepare("INSERT INTO preguntas_encuesta (pregunta, tipo_pregunta) VALUES (?, ?)");
+        $stmt->bind_param('ss', $pregunta, $tipo_pregunta);
+        if ($stmt->execute()) {
+            $id_pregunta = $stmt->insert_id;
+
+            $mensaje = "📋¡Nueva Encuesta:  '" . $pregunta . "'  se ha añadido! 📋. Ve al portal para responderla!";
+            $query = "
+                    INSERT INTO notificaciones (rut, mensaje, fecha_creacion)
+                    SELECT rut, ?, NOW()
+                    FROM usuarios
+                ";
+
+                // Preparamos la consulta
+                $stmt = $conn->prepare($query);
+
+                // Verificamos si la preparación fue exitosa
+                if ($stmt) {
+                    // Vinculamos el mensaje como parámetro
+                    $stmt->bind_param("s", $mensaje); // 's' indica que el parámetro es una cadena
+
+                    // Ejecutamos la consulta
+                    if ($stmt->execute()) {
+                    } 
+                } else {
+                }
+
+            // Si la pregunta no es de respuesta abierta, agregar opciones
+            if ($tipo_pregunta != 'texto' && isset($_POST['opcion'])) {
+                foreach ($_POST['opcion'] as $opcion) {
+                    if (!empty($opcion)) {
+                        $stmt_opcion = $conn->prepare("INSERT INTO opciones_encuesta (id_pregunta, opcion) VALUES (?, ?)");
+                        $stmt_opcion->bind_param('is', $id_pregunta, $opcion);
+                        $stmt_opcion->execute();
+                        $stmt_opcion->close();
+                    }
+                }
+            }
+            
+            $solicitudEnviada = TRUE;
+        } else {
+            $errorAlGuardar = false;
+        }
+
+        $stmt->close();
+    } else {
+        $errorAlGuardar = false;
+    }
 }
 
-
-// Supongamos que tienes el ID del evento y el RUT del usuario logueado
-$evento_id = intval($_GET['evento_id']);
-$usuario_rut = $_SESSION['rut']; // RUT del usuario logueado
-
-// Verificar si el usuario está registrado en el evento
-// Obtener la fecha actual
-$fecha_actual = date("Y-m-d");
-
-$query_asistencia = "SELECT asistencias_eventos.*, eventos.fecha 
-              FROM asistencias_eventos 
-              INNER JOIN eventos ON asistencias_eventos.evento_id = eventos.id 
-              WHERE asistencias_eventos.evento_id = ? 
-              AND asistencias_eventos.rut_usuario = ? 
-              AND eventos.fecha >= ?";
-
-$stmt_asistencia = $conn->prepare($query_asistencia);
-$stmt_asistencia->bind_param("iss", $evento_id, $usuario_rut, $fecha_actual );
-$stmt_asistencia->execute();
-$result_asistencia = $stmt_asistencia->get_result();
-
-$esta_asistiendo = ($result_asistencia->num_rows > 0);
 ?>
- 
 
 <!DOCTYPE php>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eventos</title>
+    <title>Encuestas</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" href="Images/icono2.png" type="image/x-icon">
@@ -175,18 +148,14 @@ $esta_asistiendo = ($result_asistencia->num_rows > 0);
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     <link rel="stylesheet" href="styles/style_cards.css">
     <link rel="stylesheet" href="styles/style_new_cards.css">
-    <link rel="stylesheet" href="styles/style_encuestas.css">
-    <link rel="stylesheet" href="styles/style_evento_imgs.css">
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" rel="stylesheet">
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-
     <style>
-          
+        .card-body {
+            flex-grow: 1;
+    padding: 20px;
+    max-height: 650px; /* Limitar la altura máxima del cuerpo de la tarjeta */
+    overflow: auto; /* Hacer que el contenido restante sea scrolleable si excede el límite */
+    scrollbar-width: none; /* Para Firefox */
+}
     </style>
 </head>
 <body>
@@ -754,549 +723,144 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-
+        
 
         <header class="solicitud-header">
-        <h1>Portal de eventos</h1>
-    </header>
+    <h1>Crear encuesta</h1>
+</header>
 
-<button id="scrollToTop" class="scroll-to-top1">↑ </button>
+<div class="solicitud-container-wrapper" style="margin-bottom: 50px">
 
+<div class="solicitud-instructions">
+        <h3>Instrucciones para crear una encuesta</h3>
+        <p>1. Seleccione el tipo de pregunta que quiere generar, puede elegir entre "Texto" y "Seleccion unica". Escriba una pregunta clara y concisa para la encuesta.</p>
+        <p>2. La pregunta debe ser relevante para el contexto y comprensible para los usuarios.</p>
+        <p>3. Asegúrese de que la pregunta no contenga faltas ortográficas ni gramaticales.</p>
+    </div>
+    <div class="solicitud-container">
+        <h2>Crear Pregunta de Encuesta</h2>
+        <h3>Ingrese la pregunta</h3>
+        
+        <form id="form-encuesta" class="solicitud-form" method="POST" action="">
+
+            <!-- Selector de tipo de pregunta -->
+            <div class="input-group">
+                <label for="tipo_pregunta">Tipo de Pregunta:</label>
+                <select name="tipo_pregunta" id="tipo_pregunta" required>
+                    <option value="" disabled selected>Seleccione el tipo de pregunta que desea realizar</option>
+                    <option value="texto">Respuesta abierta</option>
+                    <option value="seleccion_unica">Selección única</option>
+                </select>
+            </div>
+
+            <!-- Campo de pregunta (oculto por defecto) -->
+            <div class="input-group" id="pregunta-group" style="display:none;">
+                <label for="pregunta">Ingrese la pregunta</label>
+                <i class="fa-solid fa-question-circle"></i>
+                <input name="pregunta" id="pregunta" rows="4" cols="50" placeholder="Escriba la pregunta de la encuesta aquí..." required></textarea>
+            </div>
+
+            <!-- Área para las opciones de respuesta (oculta por defecto) -->
+            <div class="input-group" id="opciones-respuesta" style="display:none;">
+                <h3>Ingrese las opciones de respuesta</h3>
+                <i class="fa-solid fa-question-circle"></i>
+                <input style="margin-top:10px" type="text" name="opcion[]" placeholder="Opción 1">
+                <input style="margin-top:10px" type="text" name="opcion[]" placeholder="Opción 2">
+                <div class="button-opcion" style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
+                    <button type="button" id="agregar-opcion" class="solicitud-submit-btn" style="margin-top:10px;">Agregar otra opción</button>
+                </div>
+            </div>
+
+            <button type="submit" class="solicitud-submit-btn">Guardar Pregunta</button>
+        </form>
+    </div>
+    
+</div>
 <div class="solicitud-container-wrapper">
 
-<div class="solicitud-container">
-    <h2>Asistencias de Eventos</h2>  
-    <h6 style="text-align: center;">Este es el apartado de Eventos, aqui puedes ver todo lo que tenga que ver con el evento, dede su nombre, fecha, hora, ubicacion y y imagenes del evento! </h6>
+<?php
+// Consulta para obtener todas las preguntas
+$query_preguntas = "SELECT id_pregunta, pregunta FROM preguntas_encuesta";
+$result_preguntas = $conn->query($query_preguntas);
+
+// Verificar si hay preguntas en la base de datos
+if ($result_preguntas->num_rows > 0) {
+    echo "<div class='container mt-4'>";
+    echo "<h2 class='text-center mb-4'>Listado de Preguntas</h2>";
+    
+    echo "<table class='table table-bordered table-striped'>";
+    echo "<thead class='table-dark'><tr><th>ID Pregunta</th><th>Pregunta</th><th>Acción</th></tr></thead>";
+    echo "<tbody>";
+
+    // Recorrer cada fila de resultados y hacer la fila clickeable
+    while ($row = $result_preguntas->fetch_assoc()) {
+        echo "<tr style='cursor:pointer;' onclick='window.location.href=\"respuestas.php?id_pregunta=" . $row['id_pregunta'] . "\"'>";
+        echo "<td>" . $row['id_pregunta'] . "</td>";
+        echo "<td>" . $row['pregunta'] . "</td>";
+        echo "<td>";
         
-
-   
-        <div class="nom-evento">
-            <h5 style="text-align: center;">Nombre del Evento:</h5>        
-            <h2 style="margin-bottom: 20px;"> <?php echo $evento['titulo']; ?></h2>
-        </div>
-
-        <div class="evento-container" style="display: flex; justify-content: space-between;">
-    <!-- Columna de los datos del evento -->
-    <div class="datos-evento" style="flex: 1; padding-right: 20px;">
-        <p style="margin-bottom: 0px; margin-top: 20px;">Fecha:</p>
-        <h4><strong></strong> <?php echo traducir_fecha($evento['fecha']); ?></h4>
-        <p style="margin-bottom: 0px;">Hora:</p>
-        <h4><strong></strong> <?php echo date('h:i A', strtotime($evento['hora'])); ?></h4>
-        <p style="margin-bottom: 0px;">Ubicación:</p>
-        <h4><strong></strong> <?php echo $evento['ubicacion']; ?></h4>
-         
-    </div>
-    
-
-    <!-- Columna de la lista de asistentes -->
-<div class="lista-asistentes" style="flex: 1;">
-    <div class="titulo-asist" style="margin-bottom: 20px;display: flex; justify-content: space-evenly; text-align: center; align-items:center; justify-content; center;">
-    <h3 style="text-align: center; align-items: center; display: flex; justify-content: center; margin-bottom: 0px;">Lista de Asistentes</h3>
-    <!-- Mostrar botón 'Desasistir' si el usuario está registrado en el evento -->
-    <?php if ($esta_asistiendo): ?>
-                <form action="evento_desasistir.php" method="POST">
-                    <input type="hidden" name="evento_id" value="<?php echo $evento_id; ?>">
-                    <input type="hidden" name="usuario_rut" value="<?php echo $usuario_rut; ?>">
-                    <button type="submit" class="btn btn-outline-danger" style=" padding: 10px 10px;  cursor: pointer;">
-                        Desasistir
-                    </button>
-                </form>
-            
-        <?php endif; ?>
-        </div>
+        // Botón para eliminar la pregunta, sin interferir con el onclick de la fila
+        echo "<button class='btn btn-danger' style='cursor: default;' onclick='event.stopPropagation(); confirmarEliminacion(" . $row['id_pregunta'] . ")'>Eliminar</button>";
         
-    <?php if ($result_asistentes->num_rows > 0): ?>
+        echo "</td>";
+        echo "</tr>";
+    }
 
-        <div class="listar-asist" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 15px;">
-    <?php 
-    $max_mostrar = 4; // Número máximo de asistentes a mostrar inicialmente
-    $indice = 0;
-    $rut_usuario_logueado = $_SESSION['rut']; // Obtener el RUT del usuario logueado
+    echo "</tbody>";
+    echo "</table>";
+    echo "</div>";
+} else {
+    echo "<div class='container mt-4'>";
+    echo "<div class='alert alert-info' role='alert'>No hay preguntas disponibles.</div>";
+    echo "</div>";
+}
+
+$conn->close();
+?>
+
     
-    // Arrays para separar al usuario logueado y los demás asistentes
-    $usuario_logueado_asistente = null;
-    $otros_asistentes = [];
-
-    // Recorrer a los asistentes para separarlos
-    while ($asistente = $result_asistentes->fetch_assoc()) {
-        if ($asistente['rut_usuario'] === $rut_usuario_logueado) {
-            // Si el asistente es el usuario logueado, lo almacenamos
-            $usuario_logueado_asistente = $asistente;
-        } else {
-            // Los demás asistentes
-            $otros_asistentes[] = $asistente;
-        }
-    }
-
-    // Mostrar primero al usuario logueado si está asistiendo
-    if ($usuario_logueado_asistente) {
-        $carpeta_fotos = 'Images/fotos_personal/';
-        $imagen_default = 'Images/profile_photo/imagen_default.jpg';
-        $nombre_imagen = $usuario_logueado_asistente['imagen']; 
-        $ruta_imagen_usuario = file_exists($carpeta_fotos . $nombre_imagen) ? $carpeta_fotos . $nombre_imagen : $imagen_default;
-
-        // Mostrar al usuario logueado
-        echo "<div class='asistente-item' style='text-align: center; width:100px; height:100px; background-color: #A6D9F1; height: 140px; padding-top: 5px; border-radius: 10px;'>";
-        echo "<div class='img-asist' style='display: inline-block; margin: 0 10px;'>";
-        echo "<img src='{$ruta_imagen_usuario}' alt='Foto de {$usuario_logueado_asistente['nombre']}' style='width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #1CA5EA;'>";
-        echo "</div>";
-        echo "<div class='nombre-asist' style='margin-top: 5px; font-size: 16px;'>";
-
-        $nombre_completo = $usuario_logueado_asistente['nombre'];
-        $partes = explode(' ', $nombre_completo);
-        if (count($partes) >= 2) {
-            $apellido_paterno = $partes[0];
-            $excepciones = ['de', 'la', 'del', 'las', 'los']; 
-            $primer_nombre = '';
-            for ($i = 2; $i < count($partes); $i++) {
-                if (!in_array(strtolower($partes[$i]), $excepciones)) {
-                    $primer_nombre = $partes[$i];
-                    break;
-                }
-            }
-            echo $primer_nombre . ' ' . $apellido_paterno;
-        } else {
-            echo $nombre_completo;
-        }
-
-        echo "</div></div>";
-        $indice++;
-    }
-
-    // Mostrar a los demás asistentes
-    foreach ($otros_asistentes as $asistente) {
-        $carpeta_fotos = 'Images/fotos_personal/';
-        $imagen_default = 'Images/profile_photo/imagen_default.jpg';
-        $nombre_imagen = $asistente['imagen']; 
-        $ruta_imagen_usuario = file_exists($carpeta_fotos . $nombre_imagen) ? $carpeta_fotos . $nombre_imagen : $imagen_default;
-
-        // Mostrar solo los primeros $max_mostrar asistentes
-        $display_style = ($indice < $max_mostrar) ? "block" : "none";
-
-        echo "<div class='asistente-item' id='asistente-{$indice}' style='text-align: center; width:100px; height:100px; display: {$display_style};'>";
-        echo "<div class='img-asist' style='display: inline-block; margin: 0 10px;'>";
-        echo "<img src='{$ruta_imagen_usuario}' alt='Foto de {$asistente['nombre']}' style='width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #1CA5EA;'>";
-        echo "</div>";
-        echo "<div class='nombre-asist' style='margin-top: 5px; font-size: 16px;'>";
-
-        $nombre_completo = $asistente['nombre'];
-        $partes = explode(' ', $nombre_completo);
-        if (count($partes) >= 2) {
-            $apellido_paterno = $partes[0];
-            $excepciones = ['de', 'la', 'del', 'las', 'los']; 
-            $primer_nombre = '';
-            for ($i = 2; $i < count($partes); $i++) {
-                if (!in_array(strtolower($partes[$i]), $excepciones)) {
-                    $primer_nombre = $partes[$i];
-                    break;
-                }
-            }
-            echo $primer_nombre . ' ' . $apellido_paterno;
-        } else {
-            echo $nombre_completo;
-        }
-
-        echo "</div></div>";
-        $indice++;
-    }
-    ?>
 </div>
 
-
-
-
-        <?php if ($result_asistentes->num_rows > $max_mostrar): ?>
-        <!-- Botón de ver más y ocultar -->
-        <div id="botones-control-asistentes" style="text-align: right; margin-top: 10px;">
-            <span id="ver-mas-btn-asistentes" onclick="mostrarMasAsistentes()" style="cursor: pointer; color: #0044cc; text-decoration: underline;">Ver más...</span>
-            <span id="ocultar-btn-asistentes" onclick="ocultarAsistentes()" style="display: none; cursor: pointer; color: #0044cc; text-decoration: underline;">Ocultar</span>
-        </div>
-        <?php endif; ?>
-
-    <?php else: ?>
-        <p style="text-align: center;">No hay asistentes registrados aún para este evento.</p>
-    <?php endif; ?>
-</div>
-</div>
-    
-<?php if ($_SESSION['admin'] == 1) {?>
-    <div class="container-subir-img" style="margin-top: 60px;">
-        <?php 
-    // Verificar si se pasó el evento_id en la URL
-    if (isset($_GET['evento_id'])) {
-        $evento_id = intval($_GET['evento_id']);
-    } else {
-        die('ID del evento no especificado.');
-    }
-    ?>
-
-    <h4>Agregar Imágenes del Evento</h4>
-    <form id="subirImagenesForm" method="POST" action="evento_subir_img.php" enctype="multipart/form-data">
-        <div class="form-group">
-            <input type="file" name="imagenes_evento[]" class="form-control" multiple required id="imagenesInput">
-        </div>
-        <input type="hidden" name="evento_id" value="<?php echo $evento_id; ?>">
-        <button type="button" onclick="mostrarAlertaExito()" class="btn btn-primary mt-2">Subir Imágenes</button>
-    </form>
-
-    <!-- Contenedor para la previsualización de imágenes -->
-    <div id="preview" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px;"></div>
-
-    <?php }?>
-
-    <!-- Contenedor para las imágenes en miniatura -->
-<!-- Contenedor para las imágenes en miniatura -->
-<h2 style=" margin-top: 40px;">Galeria de eventos</h2>  
-<h6 style="text-align: center;">Haz click en las imagenes para entrar en el la galeria de eventos, donde prodras ver todas las fotos que se han hecho en este evento pasado! </h6>
-
-<!-- Slideshow container -->
-<div class="evento-slider-container" style="margin-top: 30px;">
-
-  <?php
-    // Obtener las imágenes del evento desde la base de datos
-    $evento_id = intval($_GET['evento_id']);
-    $query = "SELECT id, ruta_imagen FROM imagenes_eventos WHERE evento_id = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $evento_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    // Resetear el contador y mostrar las imágenes en el modal
-    $imgCounter = 1;
-    $stmt->execute(); // Reejecutar la consulta para obtener las imágenes de nuevo
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $ruta_imagen = $row['ruta_imagen'];
-            echo '
-            <div class="evento-slide evento-fade-effect">
-              <div class="evento-slide-number">' . $imgCounter . ' / ' . $result->num_rows . '</div>
-              <img src="' . $ruta_imagen . '" style="width:100%; display: flex; justify-content: center;">
-            </div>';
-            $imgCounter++;
-        }
-    }
-  ?>
-
-  <!-- Next and previous buttons -->
-  
-</div>
-<br>
-
-<!-- The dots/circles -->
-<div style="text-align:center">
-  <?php
-  // Crear los puntos para cada imagen
-  for ($i = 1; $i <= $result->num_rows; $i++) {
-      echo '<span class="evento-dot-control" onclick="goToSlide(' . $i . ')"></span>';
-  }
-  ?>
-</div>
-
-<div class="event-row" style="margin-top: 20px;">
-    <?php
-    // Obtener las imágenes del evento desde la base de datos
-    $evento_id = intval($_GET['evento_id']);
-    $query = "SELECT id, ruta_imagen FROM imagenes_eventos WHERE evento_id = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $evento_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $counter = 1; // Contador para cada imagen
-    $total_imagenes = $result->num_rows; // Número total de imágenes
-    $max_mostrar = 4; // Número máximo de imágenes a mostrar inicialmente
-
-    if ($total_imagenes > 0) {
-        echo "<div id='imagenes-contenedor'>";
-        $indice = 0;
-        while ($row = $result->fetch_assoc()) {
-            $ruta_imagen = $row['ruta_imagen'];
-            $imagen_id = $row['id']; // Asegúrate de que tienes el ID de la imagen para borrarla
-            
-            // Mostrar solo las primeras $max_mostrar imágenes inicialmente
-            $display_style = ($indice < $max_mostrar) ? "block" : "none";
-            
-            echo "
-                <div class='event-column' style='position: relative; display: {$display_style};' id='imagen-{$indice}'>
-                    <img src='{$ruta_imagen}' onclick='openEventoModal();currentEventoSlide({$counter})' class='evento-hover-shadow' style='width:100%'>
-                    
-                    <!-- Botón de eliminar -->";
-            
-            // Solo mostrar el botón si el rol es 5
-            if ($_SESSION['admin'] == 1) {
-                echo "
-                    <form id='formEliminarImagen{$imagen_id}' action='evento_eliminar_img.php' method='POST' style='position: absolute; top: 5px; right: 5px;'>
-                        <input type='hidden' name='imagen_id' value='{$imagen_id}'>
-                        <input type='hidden' name='ruta_imagen' value='{$ruta_imagen}'>
-                        <input type='hidden' name='evento_id' value='{$evento_id}'>
-                        <button type='button' onclick='confirmarEliminacionImagen(\"{$imagen_id}\")' style='font-size: 24px; background-color: rgba(255, 255, 255, 0); color: red; border: none; width: 30px; height: 30px; cursor: pointer;'>&times;</button>
-                    </form>";
-            }
-            
-            echo "
-                </div>"; // Cerrar la div de cada imagen
-            
-            $indice++;
-            $counter++;
-        }
-        echo "</div>"; // Cerrar el contenedor de imágenes
-    
-    
-        
-        // Mostrar los botones 'Ver más' y 'Ocultar'
-        if ($total_imagenes > $max_mostrar) {
-            echo "
-                <div id='botones-control' style='text-align: right; margin-top: 10px; display:flex; justify-content: end;'>
-                    <span id='ver-mas-btn' onclick='mostrarMasImagenes()' style='cursor: pointer; color: #0044cc; text-decoration: underline;'>Ver más...</span>
-                    <span id='ocultar-btn' onclick='ocultarImagenes()' style='display: none; cursor: pointer; color: #0044cc; text-decoration: underline;'>Ocultar</span>
-                </div>";
-        }
-    } else {
-        echo '<p>No hay imágenes para este evento.</p>';
-    }
-    ?>
-</div>
-
-
-<!-- Modal para mostrar las imágenes -->
-<div id="eventoModal" class="evento-modal">
-  <span class="evento-close cursor" onclick="closeEventoModal()">&times;</span>
-  <div class="evento-modal-content">
-
-    <?php
-    // Resetear el contador y mostrar las imágenes en el modal
-    $counter = 1;
-    $stmt->execute(); // Reejecutar la consulta para obtener las imágenes de nuevo
-    $result = $stmt->get_result();
-
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $ruta_imagen = $row['ruta_imagen'];
-            echo '
-            <div class="evento-mySlides">
-              <div class="evento-numbertext">' . $counter . ' / ' . $result->num_rows . '</div>
-              <img src="' . $ruta_imagen . '" style="width:100%; display: flex; justify-content: center;">
-            </div>';
-            $counter++;
-        }
-    }
-    ?>
-
-    <!-- Botones para siguiente/anterior -->
-    <a class="evento-prev" onclick="plusEventoSlides(-1)">&#10094;</a>
-    <a class="evento-next" onclick="plusEventoSlides(1)">&#10095;</a>
-
-    <!-- Texto del caption -->
-    <div class="evento-caption-container">
-      <p id="eventoCaption"></p>
-    </div>
-
-    <!-- Miniaturas debajo del modal -->
-    <div class="event-row" style="margin-top:0px;">
-        <?php
-        // Mostrar miniaturas dentro del modal
-        $counter = 1;
-        $stmt->execute(); // Reejecutar la consulta
-        $result = $stmt->get_result();
-
-        if ($result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
-                $ruta_imagen = $row['ruta_imagen'];
-                echo '
-                <div class="event-column">
-                    <img class="evento-demo" src="' . $ruta_imagen . '" onclick="currentEventoSlide(' . $counter . ')" alt="Imagen ' . $counter . '" style="width:100%">
-                </div>';
-                $counter++;
-            }
-        }
-        ?>
-    </div>
-  </div>
-</div>
-
-        <div class="boton-soli" style="margin-top: 60px; width:auto;">
-            <a href="calendario_prueba.php" class="solicitud-submit-btn" style="border-radius: 10px; padding: 10px;">Volver</a>
-        </div>
-        
-    </div>
-    </div>
-    </div>
-</div>
 
 <script>
-function mostrarMasAsistentes() {
-    // Mostrar todos los asistentes
-    var totalAsistentes = <?php echo $result_asistentes->num_rows; ?>;
-    for (var i = 0; i < totalAsistentes; i++) {
-        var asistente = document.getElementById('asistente-' + i);
-        if (asistente) {
-            asistente.style.display = 'block';
-        }
-    }
-    // Ocultar el texto 'Ver más' y mostrar el texto 'Ocultar'
-    document.getElementById('ver-mas-btn-asistentes').style.display = 'none';
-    document.getElementById('ocultar-btn-asistentes').style.display = 'inline';
-}
+    // Escuchar cambios en el select para tipo de pregunta
+    document.getElementById('tipo_pregunta').addEventListener('change', function() {
+        const opcionesDiv = document.getElementById('opciones-respuesta');
+        const preguntaGroup = document.getElementById('pregunta-group');
 
-function ocultarAsistentes() {
-    // Ocultar los asistentes adicionales
-    var maxMostrar = <?php echo $max_mostrar; ?>;
-    var totalAsistentes = <?php echo $result_asistentes->num_rows; ?>;
-    for (var i = maxMostrar; i < totalAsistentes; i++) {
-        var asistente = document.getElementById('asistente-' + i);
-        if (asistente) {
-            asistente.style.display = 'none';
+        // Mostrar el campo de la pregunta
+        preguntaGroup.style.display = 'block';
+
+        // Mostrar/ocultar las opciones de respuesta basado en el tipo de pregunta seleccionado
+        if (this.value === 'texto') {
+            opcionesDiv.style.display = 'none'; // Oculta opciones si es respuesta abierta
+        } else {
+            opcionesDiv.style.display = 'block'; // Muestra opciones para selección única/múltiple
         }
-    }
-    // Mostrar el texto 'Ver más' y ocultar el texto 'Ocultar'
-    document.getElementById('ver-mas-btn-asistentes').style.display = 'inline';
-    document.getElementById('ocultar-btn-asistentes').style.display = 'none';
-}
+    });
+
+    // Agregar más opciones dinámicamente
+document.getElementById('agregar-opcion').addEventListener('click', function() {
+    const opcionesDiv = document.getElementById('opciones-respuesta');
+    const nuevaOpcion = document.createElement('input');
+    nuevaOpcion.setAttribute('type', 'text', );
+    nuevaOpcion.setAttribute('name', 'opcion[]');
+    nuevaOpcion.setAttribute('style', 'margin-top:10px');
+    nuevaOpcion.setAttribute('placeholder', 'Nueva opción');
+    
+    // Insertar el nuevo input antes del botón de agregar
+    opcionesDiv.insertBefore(nuevaOpcion, opcionesDiv.querySelector('.button-opcion'));
+});
 </script>
-
-<script>
-function mostrarMasImagenes() {
-    // Mostrar todas las imágenes restantes
-    var totalImagenes = <?php echo $total_imagenes; ?>;
-    for (var i = 0; i < totalImagenes; i++) {
-        var imagen = document.getElementById('imagen-' + i);
-        if (imagen) {
-            imagen.style.display = 'block';
-        }
-    }
-    // Ocultar el botón 'Ver más' y mostrar el botón 'Ocultar'
-    document.getElementById('ver-mas-btn').style.display = 'none';
-    document.getElementById('ocultar-btn').style.display = 'inline-block';
-}
-
-function ocultarImagenes() {
-    // Ocultar las imágenes adicionales
-    var maxMostrar = <?php echo $max_mostrar; ?>;
-    var totalImagenes = <?php echo $total_imagenes; ?>;
-    for (var i = maxMostrar; i < totalImagenes; i++) {
-        var imagen = document.getElementById('imagen-' + i);
-        if (imagen) {
-            imagen.style.display = 'none';
-        }
-    }
-    // Mostrar el botón 'Ver más' y ocultar el botón 'Ocultar'
-    document.getElementById('ver-mas-btn').style.display = 'inline-block';
-    document.getElementById('ocultar-btn').style.display = 'none';
-}
-</script>
-
-<script>
-    let slideIndex = 0;
-    let autoScroll;  // Variable para almacenar el timeout del autoscroll
-
-    // Mostrar las diapositivas automáticamente y permitir control manual
-    function autoShowSlides() {
-        let i;
-        let slides = document.getElementsByClassName("evento-slide");
-        let dots = document.getElementsByClassName("evento-dot-control");
-
-        // Ocultar todas las diapositivas
-        for (i = 0; i < slides.length; i++) {
-            slides[i].style.display = "none";
-        }
-
-        // Incrementar el índice del slide
-        slideIndex++;
-        if (slideIndex > slides.length) {
-            slideIndex = 1; // Si sobrepasa el número de diapositivas, vuelve al primero
-        }
-
-        // Mostrar la diapositiva actual
-        slides[slideIndex - 1].style.display = "block";
-
-        // Eliminar la clase 'active' de todos los puntos
-        for (i = 0; i < dots.length; i++) {
-            dots[i].className = dots[i].className.replace(" active-dot", "");
-        }
-
-        // Añadir la clase 'active' al punto correspondiente
-        dots[slideIndex - 1].className += " active-dot";
-
-        // Cambiar la diapositiva cada 4 segundos
-        autoScroll = setTimeout(autoShowSlides, 4000); // Cambia la imagen cada 4 segundos
-    }
-
-    // Controles para siguiente/anterior
-    function plusSlides(n) {
-        clearTimeout(autoScroll);  // Detener el autoscroll temporalmente
-        showSlides(slideIndex += n);
-    }
-
-    // Controles para ir a un slide específico
-    function currentSlide(n) {
-        clearTimeout(autoScroll);  // Detener el autoscroll temporalmente
-        showSlides(slideIndex = n);
-    }
-
-    // Mostrar diapositivas manualmente
-    function showSlides(n) {
-        let i;
-        let slides = document.getElementsByClassName("evento-slide");
-        let dots = document.getElementsByClassName("evento-dot-control");
-
-        // Reiniciar el índice si es necesario
-        if (n > slides.length) {slideIndex = 1}
-        if (n < 1) {slideIndex = slides.length}
-
-        // Ocultar todas las diapositivas
-        for (i = 0; i < slides.length; i++) {
-            slides[i].style.display = "none";
-        }
-
-        // Eliminar la clase 'active' de todos los puntos
-        for (i = 0; i < dots.length; i++) {
-            dots[i].className = dots[i].className.replace(" active-dot", "");
-        }
-
-        // Mostrar la diapositiva actual y activar el punto correspondiente
-        slides[slideIndex - 1].style.display = "block";
-        dots[slideIndex - 1].className += " active-dot";
-
-        // Reiniciar el autoscroll después de la acción manual
-        autoScroll = setTimeout(autoShowSlides, 4000);  // Reiniciar el autoscroll
-    }
-
-    // Iniciar el autoscroll cuando la página carga
-    window.onload = function() {
-        autoShowSlides();  // Iniciar el slideshow automáticamente
-    };
-</script>
-
-
-
+<!-- Importar SweetAlert -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-function mostrarAlertaExito() {
-    var eventoId = document.querySelector('input[name="evento_id"]').value;
-
-    Swal.fire({
-        title: '¡Imágenes subidas!',
-        text: 'Las imágenes han sido subidas con éxito.',
-        icon: 'success',
-        confirmButtonText: 'OK'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Enviar el formulario
-            document.getElementById('subirImagenesForm').submit();
-        }
-    });
-}
-</script>
-
-
-
-<script>
-function confirmarEliminacionImagen(imagenId) {
+function confirmarEliminacion(idPregunta) {
+    // Mostrar modal de confirmación
     Swal.fire({
         title: '¿Estás seguro?',
-        text: "Esta imagen se eliminará permanentemente.",
+        text: "¡Esta acción no se puede deshacer!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -1305,118 +869,162 @@ function confirmarEliminacionImagen(imagenId) {
         cancelButtonText: 'Cancelar'
     }).then((result) => {
         if (result.isConfirmed) {
-            // Enviar el formulario correspondiente para eliminar la imagen
-            document.getElementById('formEliminarImagen' + imagenId).submit();
+            // Si el usuario confirma, proceder a eliminar la pregunta
+            fetch('eliminar_pregunta.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'id_pregunta=' + encodeURIComponent(idPregunta)
+            })
+            .then(response => response.json()) // Asumimos que la respuesta será JSON
+            .then(data => {
+                if (data.success) {
+                    Swal.fire(
+                        '¡Eliminado!',
+                        'La pregunta ha sido eliminada.',
+                        'success'
+                    ).then(() => {
+                        location.reload(); // Recargar la página después de la eliminación
+                    });
+                } else {
+                    Swal.fire(
+                        'Error',
+                        'Ocurrió un error al eliminar la pregunta.',
+                        'error'
+                    );
+                }
+            })
+            .catch(error => {
+                Swal.fire(
+                    'Error',
+                    'No se pudo conectar con el servidor.',
+                    'error'
+                );
+            });
         }
     });
 }
 </script>
 
 
+
+
+
+
+
+</div>
+
+    <!-- jQuery y Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<!-- Mostrar alerta de éxito si la solicitud fue enviada correctamente -->
+<?php if ($solicitudEnviada) : ?>
 <script>
-    document.getElementById('imagenesInput').addEventListener('change', function(event) {
-        var preview = document.getElementById('preview');
-        preview.innerHTML = ''; // Limpiar cualquier vista previa anterior
-
-        var files = event.target.files; // Obtener los archivos seleccionados
-
-        // Iterar sobre los archivos seleccionados
-        for (var i = 0; i < files.length; i++) {
-            var file = files[i];
-
-            // Verificar si el archivo es una imagen
-            if (file.type.startsWith('image/')) {
-                var reader = new FileReader();
-
-                // Crear un div para cada imagen y añadirla al contenedor de previsualización
-                reader.onload = function(e) {
-                    var imageContainer = document.createElement('div');
-                    imageContainer.style.position = 'relative';
-                    imageContainer.style.display = 'inline-block';
-
-                    var img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.style.width = '100px';
-                    img.style.height = '100px';
-                    img.style.objectFit = 'cover';
-                    img.style.border = '2px solid #1CA5EA';
-                    img.style.borderRadius = '10px';
-                    img.style.margin = '5px';
-
-                    // Añadir la imagen al contenedor
-                    imageContainer.appendChild(img);
-                    preview.appendChild(imageContainer);
-                };
-
-                // Leer el archivo de imagen
-                reader.readAsDataURL(file);
-            } else {
-                // Mostrar mensaje si no es una imagen
-                alert('Solo se pueden previsualizar archivos de imagen.');
-            }
+    Swal.fire({
+        title: '¡Pregunta guardada!',
+        text: 'Tu pregunta ha sido guardada correctamente.',
+        icon: 'success',
+        confirmButtonText: 'OK'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = 'crear_encuesta.php'; // Redirigir después de cerrar el modal
         }
     });
 </script>
+<?php endif; ?>
 
-<!-- Script para manejar el modal y las imágenes -->
+<!-- Mostrar alerta de error si hubo un problema al guardar -->
+<?php if ($errorAlGuardar) : ?>
 <script>
-// Abrir el modal
-function openEventoModal() {
-  document.getElementById("eventoModal").style.display = "block";
-}
-
-// Cerrar el modal
-function closeEventoModal() {
-  document.getElementById("eventoModal").style.display = "none";
-}
-
-var eventoSlideIndex = 1;
-showEventoSlides(eventoSlideIndex);
-
-// Controles siguiente/anterior
-function plusEventoSlides(n) {
-  showEventoSlides(eventoSlideIndex += n);
-}
-
-// Control de miniaturas
-function currentEventoSlide(n) {
-  showEventoSlides(eventoSlideIndex = n);
-}
-
-function showEventoSlides(n) {
-  var i;
-  var slides = document.getElementsByClassName("evento-mySlides");
-  var dots = document.getElementsByClassName("evento-demo");
-  var captionText = document.getElementById("eventoCaption");
-  if (n > slides.length) {eventoSlideIndex = 1}
-  if (n < 1) {eventoSlideIndex = slides.length}
-  for (i = 0; i < slides.length; i++) {
-    slides[i].style.display = "none";
-  }
-  for (i = 0; i < dots.length; i++) {
-    dots[i].className = dots[i].className.replace(" active", "");
-  }
-  slides[eventoSlideIndex-1].style.display = "block";
-  dots[eventoSlideIndex-1].className += " active";
-  captionText.innerHTML = dots[eventoSlideIndex-1].alt;
-}
+    Swal.fire({
+        title: 'Error',
+        text: 'Ocurrió un error al guardar la pregunta. Por favor, intenta nuevamente.',
+        icon: 'error',
+        confirmButtonText: 'OK'
+    });
 </script>
+<?php endif; ?>
 
-    <script src="scripts/script.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 
 <script>
-    document.getElementById('scrollToTop').addEventListener('click', function() {
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
+$(document).ready(function () {
+    $('#tipo-pregunta').change(function () {
+        var tipoSeleccionado = $(this).val();
+        var contenedor = $('#pregunta-dinamica');
+        contenedor.empty();  // Limpia el contenedor
+
+        if (tipoSeleccionado === 'Parrafo') {
+            contenedor.append(`
+                <div class="input-group">
+                    <label for="pregunta">Escribe tu pregunta en formato de párrafo:</label>
+                    <input type="text" name="pregunta" id="pregunta" placeholder="Escribe tu pregunta aquí..." required>
+                </div>
+            `);
+        } else if (tipoSeleccionado === 'Selección única' || tipoSeleccionado === 'Selección múltiple') {
+            var tipoOpcion = tipoSeleccionado === 'Selección única' ? 'radio' : 'checkbox';
+            contenedor.append(`
+                <div class="input-group" style="margin-bottom: 20px;">
+                    <label for="pregunta" style="display: block; font-weight: bold; margin-bottom: 8px;">Escribe tu pregunta para selección:</label>
+                    <input type="text" name="pregunta" id="pregunta" placeholder="Escribe tu pregunta aquí..." required style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box;">
+                </div>
+
+                <div class="input-group" id="opciones" style="margin-bottom: 20px;display: block;<">
+                    <label style="display: block; font-weight: bold; margin-bottom: 8px;">Opciones:</label>
+                    <div style="margin-bottom: 10px;">
+                        <input type="radio" disabled style="margin-right: 10px;">
+                        <input type="text" name="opciones[]" placeholder="Opción 1" style="width: calc(100% - 40px); padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <input type="radio" disabled style="margin-right: 10px;">
+                        <input type="text" name="opciones[]" placeholder="Opción 2" style="width: calc(100% - 40px); padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+                    </div>
+                    <button type="button" class="solicitud-submit-btn" id="agregar-opcion" style="background-color: #003366; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Agregar Opción</button>
+                </div>
+
+            `);
+
+            // Botón para agregar más opciones
+            $('#agregar-opcion').click(function () {
+                var numOpciones = $('#opciones div').length;
+                $('#opciones').append(`
+                    <div>
+                        <input type="${tipoOpcion}" disabled>
+                        <input type="text" name="opciones[]" placeholder="Opción ${numOpciones + 1}">
+                    </div>
+                `);
+            });
+        } else if (tipoSeleccionado === 'Caja de selección') {
+            contenedor.append(`
+                <div class="input-group">
+                    <label for="pregunta">Escribe tu pregunta para el select box:</label>
+                    <input type="text" name="pregunta" id="pregunta" placeholder="Escribe tu pregunta aquí..." required>
+                </div>
+                <div class="input-group" id="opciones">
+                    <label>Opciones:</label>
+                    <select>
+                        <option disabled selected>Seleccione una opción</option>
+                        <option>Opción 1</option>
+                        <option>Opción 2</option>
+                    </select>
+                    <button type="button" id="agregar-opcion">Agregar Opción</button>
+                </div>
+            `);
+
+            // Botón para agregar más opciones
+            $('#agregar-opcion').click(function () {
+                var numOpciones = $('#opciones select option').length;
+                $('#opciones select').append(`<option>Opción ${numOpciones}</option>`);
+            });
+        }
     });
 });
-</script>
 
- <!-- jQuery y Bootstrap JS -->
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</script>
 
     <!-- Linking SwiperJS script -->
   <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -1426,7 +1034,7 @@ function showEventoSlides(n) {
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
       crossorigin="anonymous"></script>
-      
+  <script src="scripts/script.js"></script>
   <footer class="footer">
     <div class="footer-container">
         <div class="footer-section">
@@ -1455,11 +1063,3 @@ function showEventoSlides(n) {
 </footer>  
 </body>
 </html>
-
-
-<?php
-// Cerrar las conexiones
-$stmt_evento->close();
-$stmt_asistentes->close();
-$conn->close();
-?>

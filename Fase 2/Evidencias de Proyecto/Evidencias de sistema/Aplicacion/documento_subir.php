@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['archivo'])) {
     $extensiones_permitidas = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (in_array($tipo_archivo, $extensiones_permitidas)) {
         // Establecemos la carpeta de destino
-        $carpeta_destino = 'uploads/';
+        $carpeta_destino = 'archivos/documentos/';
         if (!is_dir($carpeta_destino)) {
             mkdir($carpeta_destino, 0777, true); // Crea la carpeta si no existe
         }
